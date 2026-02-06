@@ -1,0 +1,187 @@
+---
+title: "The Problem"
+description: "AI agents execute actions with real-world consequences. Traditional security architectures weren't designed for this."
+---
+
+## From Text to Actions
+
+Large language models began as text generators. Security meant filtering harmful outputs—profanity, misinformation, toxic content. If the model said something wrong, you could discard it before displaying.
+
+That model is obsolete.
+
+Today's AI systems **do things**:
+
+- Query databases and modify records
+- Send emails and Slack messages
+- Create, edit, and delete files
+- Execute code and shell commands
+- Call external APIs and webhooks
+- Manage cloud infrastructure
+- Process financial transactions
+
+When an AI agent executes `DROP TABLE customers`, no output filter helps. The data is gone.
+
+---
+
+## The Runtime Security Gap
+
+AI-driven actions have four characteristics that break traditional security:
+
+<AccordionGroup>
+  <Accordion title="Irreversibility" icon="rotate-left">
+    Unlike text generation—which can be filtered before display—tool executions produce immediate, permanent effects. Database mutations, sent emails, financial transfers, credential changes. 
+    
+    Once executed, the damage is done.
+```
+    # This can't be "filtered"
+    agent.execute("rm -rf /important/data")
+```
+  </Accordion>
+
+  <Accordion title="Speed" icon="gauge-high">
+    Agents execute hundreds of actions per minute. No human can review them in real time.
+    
+    | Actor | Actions per minute |
+    |-------|-------------------|
+    | Human operator | 2-5 |
+    | AI agent | 100-500 |
+    | Human reviewer capacity | 5-10 |
+    
+    Security decisions must be **automated and instantaneous**.
+  </Accordion>
+
+  <Accordion title="Compositional Risk" icon="diagram-project">
+    Individual actions may each satisfy policy. Their composition violates it.
+```
+    Action 1: db.query("SELECT * FROM customers")  
+      → ALLOW (user has read access)
+    
+    Action 2: email.send(to="external@partner.com", body=results)  
+      → ALLOW (user can send email)
+    
+    Composition: PII exfiltrated to external party  
+      → VIOLATION
+```
+    
+    Traditional security evaluates actions in isolation.
+  </Accordion>
+
+  <Accordion title="Untrusted Orchestration" icon="skull">
+    Prompt injection, jailbreaks, and indirect attacks mean the model's "intent" cannot be trusted.
+    
+    The agent might be:
+    - Following malicious instructions embedded in a document
+    - Manipulated by a crafted error message
+    - Deceived about what action it's actually taking
+    
+    **The AI layer must be treated as potentially compromised.**
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Why Existing Security Fails
+
+<CardGroup cols={2}>
+  <Card title="SIEM" icon="magnifying-glass">
+    **Built for:** Event analysis and correlation
+    
+    **Failure mode:** Observes *after* execution. By the time SIEM alerts, the database is dropped.
+    
+    SIEM answers "what happened?" — but can't prevent it.
+  </Card>
+
+  <Card title="API Gateways" icon="door-open">
+    **Built for:** Authentication, rate limiting, routing
+    
+    **Failure mode:** Verifies *who* is calling, not *what* the action means. A valid token making a destructive call passes through.
+    
+    Gateway sees credentials, not intent.
+  </Card>
+
+  <Card title="Firewalls" icon="shield-halved">
+    **Built for:** Network perimeter defense
+    
+    **Failure mode:** Agents operate *inside* the perimeter with legitimate credentials. The call comes from an authorized service.
+    
+    The threat is already inside.
+  </Card>
+
+  <Card title="Prompt Guardrails" icon="comment-slash">
+    **Built for:** Filtering model outputs
+    
+    **Failure mode:** Filters text, not actions. Easily bypassed. Can't evaluate whether `db.execute(query)` is safe—only whether the *text describing it* looks harmful.
+    
+    Guardrails see words, not operations.
+  </Card>
+
+  <Card title="IAM / RBAC" icon="user-lock">
+    **Built for:** Identity and access management
+    
+    **Failure mode:** Evaluates permissions in isolation. User *can* read customers. User *can* send email. System doesn't know doing both in sequence is exfiltration.
+    
+    Permissions don't understand composition.
+  </Card>
+
+  <Card title="Human-in-the-Loop" icon="user-check">
+    **Built for:** Manual approval of sensitive actions
+    
+    **Failure mode:** Doesn't scale to agent speed. Leads to rubber-stamping. [Can itself be exploited](https://checkmarx.com/blog/lies-in-the-loop) through forged approval dialogs.
+    
+    Humans become the bottleneck—or the vulnerability.
+  </Card>
+</CardGroup>
+
+---
+
+## The Missing Layer
+
+There's a gap in the security stack:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     EXISTING SECURITY                       │
+├─────────────────────────────────────────────────────────────┤
+│  Perimeter        │  Network firewalls, WAF                 │
+│  Identity         │  IAM, RBAC, OAuth                       │
+│  Application      │  Input validation, output filtering     │
+│  Data             │  Encryption, DLP                        │
+│  Observability    │  SIEM, logging, monitoring              │
+├─────────────────────────────────────────────────────────────┤
+│                     ??? GAP ???                              │
+│                                                             │
+│  Where do you enforce policy on AI-initiated actions        │
+│  BEFORE they execute?                                       │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                     TOOLS / APIS                            │
+│  Databases, email, files, cloud, external services          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This gap is where AARM operates: **runtime enforcement at the action boundary**.
+
+---
+
+## What's Needed
+
+A security system that:
+
+| Requirement | Why |
+|-------------|-----|
+| **Intercepts before execution** | Prevention, not just detection |
+| **Evaluates action semantics** | Understands *what* is happening, not just *who* |
+| **Enforces policy inline** | Allow, deny, modify, or escalate in real time |
+| **Handles composition** | Detects multi-action violations |
+| **Treats agent as untrusted** | Assumes orchestration may be compromised |
+| **Creates forensic trail** | Tamper-evident record of every decision |
+| **Scales to agent speed** | Automated, millisecond decisions |
+
+No existing security tool does all of this.
+
+---
+
+## Next
+
+<Card title="What is AARM?" icon="shield-check" href="/definition">
+  How AARM fills the runtime security gap
+</Card>
