@@ -1,0 +1,128 @@
+---
+title: "Overview"
+description: "AARM addresses threats where AI-driven actions can cause harm—even when the agent has legitimate credentials and the individual actions appear authorized."
+---
+
+## Core Assumption
+
+AARM operates on a fundamental principle: **the AI orchestration layer cannot be trusted as a security boundary.**
+
+Unlike traditional applications where code behavior is deterministic, AI agents process untrusted inputs—user prompts, tool outputs, retrieved documents—that can manipulate their behavior. The agent may be:
+
+- Instructed to perform harmful actions
+- Confused about what it should do
+- Deceived about what it is doing
+- Drifting from the user's original intent through its own reasoning
+
+AARM treats the agent as a **potentially compromised component** and enforces security at the action layer—the boundary where decisions become operations on external systems.
+
+---
+
+## Trust Model
+
+<CardGroup cols={3}>
+  <Card title="Trusted" icon="shield-check" color="#22c55e">
+    - AARM control plane
+    - Cryptographic primitives
+    - Policy store
+  </Card>
+  <Card title="Untrusted" icon="shield-xmark" color="#ef4444">
+    - AI model
+    - Agent orchestration
+    - User inputs
+    - Tool outputs
+    - Retrieved documents
+  </Card>
+  <Card title="Partially Trusted" icon="shield-halved" color="#f59e0b">
+    - Tool implementations
+    - Human approvers
+  </Card>
+</CardGroup>
+
+---
+
+## Primary Threats
+
+AARM addresses seven threat categories. Four represent the most critical attack patterns:
+
+| Threat | Description | Impact |
+|--------|-------------|--------|
+| **[Prompt Injection](/threats/prompt-injection)** | Malicious instructions override agent behavior | Unauthorized actions executed with legitimate credentials |
+| **[Confused Deputy](/threats/confused-deputy)** | Agent manipulated into unintended operations | Destructive actions the user never requested |
+| **[Data Exfiltration](/threats/data-exfiltration)** | Composition of allowed actions creates breach | Sensitive data sent to unauthorized destinations |
+| **[Intent Drift](/threats/intent-drift)** | Agent reasoning gradually diverges from user's request | Actions increasingly misaligned with what user asked for |
+
+Additional threats AARM mitigates:
+
+| Threat | Description | AARM Control |
+|--------|-------------|--------------|
+| **Malicious Tool Outputs** | Tool returns adversarial content that manipulates agent | Post-tool action restrictions, context tracking |
+| **Over-Privileged Credentials** | Tokens grant excessive permissions | Least-privilege, scoped credentials |
+| **Memory Poisoning** | False data injected into persistent memory | Provenance tracking, anomaly detection |
+
+---
+
+## Attack Lifecycle
+
+<Steps>
+  <Step title="Injection">
+    Attacker embeds malicious instructions in user input, documents, or tool outputs
+  </Step>
+  <Step title="Hijacking">
+    Agent interprets malicious content as legitimate instructions
+  </Step>
+  <Step title="Execution">
+    Agent invokes tools with attacker-controlled parameters
+  </Step>
+  <Step title="Impact">
+    Irreversible effects: data theft, unauthorized transactions, system damage
+  </Step>
+</Steps>
+
+**AARM intervenes between steps 2 and 3**—after the agent decides to act, but before the action executes.
+
+<Note>
+**Intent drift follows a different pattern.** There is no injection or hijacking—the agent's own reasoning gradually diverges from the original request. AARM detects this through context accumulation and semantic distance tracking, triggering controls when divergence exceeds acceptable thresholds.
+</Note>
+
+---
+
+## Threat Response by Action Classification
+
+AARM's [action classification framework](/action-classification) provides differentiated responses:
+
+| Classification | Threats Addressed | Response |
+|----------------|-------------------|----------|
+| **Forbidden** | Catastrophic injection attempts, known malicious patterns | Always deny, no context required |
+| **Context-Dependent Deny** | Data exfiltration, goal hijacking, malicious tool outputs | Policy allows but context reveals misalignment |
+| **Context-Dependent Allow** | Intent drift false positives, legitimate elevated actions | Policy denies but context confirms alignment |
+
+---
+
+## Out of Scope
+
+| Threat | Why | Complementary Control |
+|--------|-----|----------------------|
+| Model training poisoning | Pre-deployment | ML security, model provenance |
+| DoS against AARM | Infrastructure | Availability controls |
+| Social engineering of approvers | Human factor | Security training |
+| Memory storage security | External system | Database security controls |
+
+---
+
+## Deep Dives
+
+<CardGroup cols={2}>
+  <Card title="Prompt Injection" icon="syringe" href="/threats/prompt-injection">
+    Direct and indirect instruction attacks
+  </Card>
+  <Card title="Confused Deputy" icon="user-secret" href="/threats/confused-deputy">
+    Manipulation into unauthorized actions
+  </Card>
+  <Card title="Data Exfiltration" icon="file-export" href="/threats/data-exfiltration">
+    Compositional attacks bypassing individual checks
+  </Card>
+  <Card title="Intent Drift" icon="route" href="/threats/intent-drift">
+    Agent reasoning diverging from user's original request
+  </Card>
+</CardGroup>
