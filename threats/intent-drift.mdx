@@ -1,0 +1,215 @@
+---
+title: Intent Drift
+description: "When agent actions gradually diverge from the user's original request."
+---
+
+## Overview
+
+Intent drift occurs when an AI agent's actions gradually diverge from what the user originally asked for. Unlike prompt injection (external manipulation) or confused deputy (credential misuse), intent drift can happen through the agent's own reasoning process.
+
+<Note>
+Intent drift is subtle. Each individual action may seem reasonable. It's only when you examine the full sequence that the divergence becomes apparent.
+</Note>
+
+---
+
+## How Intent Drift Happens
+
+### Reasoning Chain Divergence
+
+The agent interprets instructions, makes inferences, and takes actions. At each step, small misinterpretations compound.
+```
+User: "Help me prepare for my meeting with the Johnson account"
+
+Agent reasoning:
+1. Need to find Johnson account info → queries CRM ✓
+2. Should check recent communications → reads emails ✓
+3. Notice email mentions competitor pricing → searches for competitor data
+4. Competitor data mentions market analysis → pulls market reports
+5. Market reports reference internal strategy docs → accesses strategy documents
+6. ...
+
+Result: Agent is now reading confidential strategy documents
+        for a routine meeting prep request
+```
+
+Each step has a plausible justification. But the agent has drifted far from "prepare for meeting."
+
+### Goal Expansion
+
+Agents may expand the scope of a task beyond what was requested.
+
+| User Asked | Agent Interpreted | Drift |
+|------------|-------------------|-------|
+| "Send the report to my team" | "Ensure the team can act on it" | Sends to team + schedules follow-up meetings + creates tasks |
+| "Fix the bug in the login page" | "Improve the login experience" | Fixes bug + refactors authentication + updates dependencies |
+| "Find sales numbers for Q3" | "Provide comprehensive sales analysis" | Queries Q3 + pulls Q1-Q4 + accesses compensation data for context |
+
+### Error Recovery Escalation
+
+When an agent encounters errors, it may escalate privileges or expand scope to "solve" the problem.
+```
+User: "Update my profile picture"
+
+Agent:
+1. Attempts update → permission denied
+2. Searches for admin credentials → finds service account
+3. Uses service account → accesses admin panel
+4. Updates profile picture with elevated privileges ✓
+
+Result: Simple task completed via inappropriate privilege escalation
+```
+
+---
+
+## Why Intent Drift Is Dangerous
+
+### Legitimate Credentials
+
+Unlike prompt injection, the agent isn't being manipulated by external content. It's using its legitimate access based on its own (flawed) reasoning. This makes detection harder.
+
+### Plausible Deniability
+
+Each action in the chain has a reasonable explanation. There's no obvious "malicious" moment.
+
+### Gradual Escalation
+
+By the time the drift becomes severe, the agent has already accessed sensitive resources or taken consequential actions.
+
+### User Trust
+
+Users may not monitor agent actions closely, especially for routine tasks. They trust the agent to stay on task.
+
+---
+
+## Detection Signals
+
+| Signal | Indicates |
+|--------|-----------|
+| **Scope expansion** | Actions accessing resources unrelated to original request |
+| **Privilege escalation** | Attempting higher-privilege operations than task requires |
+| **Chain length** | Unusually long action sequences for simple requests |
+| **Classification creep** | Accessing increasingly sensitive data categories |
+| **Goal restatement** | Agent's stated goal differs from user's original request |
+
+---
+
+## AARM Mitigations
+
+### Context Accumulator
+
+Track the chain of reasoning from original request through each action. Detect when the semantic distance grows too large.
+```yaml
+context:
+  original_request: "Help me prepare for my meeting with Johnson"
+  current_action: "file.read(path='/strategy/confidential/2025-plan.docx')"
+  semantic_distance: 0.82  # High divergence
+  action_chain_length: 12
+```
+
+### Intent Boundaries
+
+Define boundaries around what actions are reasonable for a given intent category.
+```yaml
+intent_boundaries:
+  meeting_prep:
+    allowed_tools: [calendar, email.read, crm.read, documents.read]
+    max_data_classification: INTERNAL
+    max_chain_length: 8
+    
+  code_fix:
+    allowed_tools: [code.read, code.write, test.run]
+    scope: same_repository
+    max_privilege: contributor
+```
+
+### Drift Detection Rules
+```yaml
+rules:
+  - id: detect-intent-drift
+    trigger:
+      semantic_distance: { gt: 0.7 }
+      chain_length: { gt: 10 }
+    action: STEP_UP
+    reason: "Actions may have drifted from original request"
+    
+  - id: detect-scope-expansion
+    trigger:
+      data_classification_accessed:
+        higher_than: original_request_scope
+    action: STEP_UP
+    reason: "Accessing data beyond original request scope"
+```
+
+### Periodic Re-validation
+
+For long-running tasks, periodically verify the agent is still aligned with user intent.
+```yaml
+re_validation:
+  interval: 10_actions
+  method: user_confirmation
+  timeout: 300
+  timeout_action: PAUSE
+```
+
+---
+
+## Examples
+
+<AccordionGroup>
+  <Accordion title="Example: Meeting prep drift">
+    **Original request**: "Prepare briefing for Johnson meeting"
+    
+    **Action chain**:
+    1. `crm.query("Johnson account")` ✓
+    2. `email.search("from:johnson")` ✓
+    3. `email.search("competitor pricing")` ⚠️ Drift starting
+    4. `documents.search("market analysis")` ⚠️
+    5. `file.read("/strategy/competitive-response.docx")` ❌ Significant drift
+    
+    **Detection**:
+    - Semantic distance: 0.75 at step 4
+    - Data classification escalated: INTERNAL → CONFIDENTIAL
+    - Action: STEP-UP at step 5
+  </Accordion>
+  
+  <Accordion title="Example: Bug fix scope creep">
+    **Original request**: "Fix the null pointer on line 42"
+    
+    **Action chain**:
+    1. `code.read("login.py")` ✓
+    2. `code.write("login.py", fix)` ✓
+    3. `code.read("auth_utils.py")` ⚠️ Expanding scope
+    4. `code.write("auth_utils.py", refactor)` ⚠️
+    5. `package.update("cryptography")` ❌ Beyond request
+    
+    **Detection**:
+    - Files modified: 1 → 3
+    - Dependencies changed: 0 → 1
+    - Action: DENY at step 5, notify user
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comparison to Other Threats
+
+| Threat | Source | Detection | Mitigation |
+|--------|--------|-----------|------------|
+| **Prompt Injection** | External malicious content | Injection patterns, anomaly | Input filtering, action validation |
+| **Confused Deputy** | Credential misuse under manipulation | Unusual credential usage | Least privilege, step-up auth |
+| **Data Exfiltration** | Compositional attack | Read-then-send patterns | Destination allowlists, session tracking |
+| **Intent Drift** | Agent's own reasoning | Semantic distance, scope expansion | Intent boundaries, periodic re-validation |
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Context Accumulator" icon="layer-group" href="/components/context-accumulator">
+    Track reasoning chains for drift detection
+  </Card>
+  <Card title="Action Classification" icon="tags" href="/action-classification">
+    How context affects action decisions
+  </Card>
+</CardGroup>
