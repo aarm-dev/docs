@@ -1,0 +1,59 @@
+---
+title: Research Directions
+sidebarTitle: Open Challenges
+description: "Open problems in AI agent runtime security that require further research."
+---
+
+AARM addresses runtime action security, but several challenges remain open for the research community.
+
+---
+
+## Intent Inference
+
+Policies operate on action structure, but security violations are often about intent. The same action may be benign or malicious depending on *why* it was invoked.
+
+**Open question:** Can we build reliable intent classifiers, or must we accept that some attacks will be semantically indistinguishable from legitimate operations?
+
+**Directions:** Reasoning trace analysis, anomaly detection over action sequences, integration of model interpretability with policy evaluation.
+
+---
+
+## Data Flow Through Context Windows
+
+Individual actions may satisfy policy while their composition violates security objectives. Tracking data flow is complicated when data passes through an LLM's context window, where it may be transformed, summarized, or paraphrased.
+
+**Open question:** How do we track data lineage through non-deterministic transformations?
+
+**Directions:** Information flow tracking across actions (taint analysis), temporal policy logic, integration with data loss prevention systems.
+
+---
+
+## Multi-Agent Coordination
+
+As agents delegate to other agents, action chains become distributed across multiple orchestration contexts. Maintaining coherent authorization and audit trails across agent boundaries is unsolved.
+
+**Directions:** Distributed tracing standards for agentic systems, cross-agent policy propagation, federated receipt verification, transitive trust models for delegation chains.
+
+---
+
+## Approval and Deferral Fatigue
+
+Requiring human approval or deferral resolution for too many actions renders the system unusable. Requiring too few leaves gaps. The introduction of DEFER as a fifth authorization decision creates additional design tension: systems must balance safety against operational cost.
+
+**Directions:** Risk-based dynamic approval and deferral thresholds, batch approval for similar actions, approval delegation hierarchies, ML-based approval recommendation, automated deferral resolution using progressive context collection.
+
+---
+
+## Vendor Integration Standardization
+
+[Architecture D (Vendor Integration)](/architectures/vendor-integration) requires vendor cooperation. Without standardization, each vendor implements governance hooks differently.
+
+**Directions:** Industry consortium for governance hook standardization, certification program for AARM-compliant vendor implementations, reference implementations for common platforms, standard hook interface specification ensuring synchronous pre-execution enforcement.
+
+---
+
+## AARM System Security
+
+The AARM system itself becomes a high-value target. Compromise of the policy engine or receipt store undermines all guarantees.
+
+**Directions:** Hardware-backed policy enforcement (TEEs, HSMs), distributed policy decision for Byzantine fault tolerance, append-only receipt storage with cryptographic chaining.
