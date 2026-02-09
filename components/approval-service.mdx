@@ -1,0 +1,174 @@
+---
+title: Approval Service
+description: Human-in-the-loop authorization for high-risk actions.
+---
+
+## Purpose
+
+The Approval Service implements step-up authorization:
+
+1. Receives actions requiring approval
+2. Routes to designated approvers
+3. Collects approval/denial decision
+4. Returns result to Policy Engine
+
+---
+
+## Flow
+```
+Action triggers STEP_UP policy
+         ↓
+Approval Service receives request
+         ↓
+Notification sent to approvers (Slack, email, etc.)
+         ↓
+Approver reviews action details
+         ↓
+    ┌────┴────┐
+ Approve    Deny
+    ↓         ↓
+ Execute    Block
+```
+
+---
+
+## Interface
+```python
+@dataclass
+class ApprovalRequest:
+    id: str
+    action: Action
+    approvers: list[str]
+    timeout: int  # seconds
+    reason: str   # why approval needed
+
+@dataclass 
+class ApprovalResult:
+    granted: bool
+    approver: str | None
+    reason: str | None
+    timestamp: datetime
+
+class ApprovalService:
+    async def request(
+        self, 
+        action: Action, 
+        approvers: list[str],
+        timeout: int = 3600
+    ) -> ApprovalResult:
+        ...
+    
+    async def approve(self, request_id: str, approver: str):
+        ...
+    
+    async def deny(self, request_id: str, approver: str, reason: str):
+        ...
+```
+
+---
+
+## Implementation
+```python
+class ApprovalService:
+    def __init__(self, notifier: Notifier, store: ApprovalStore):
+        self.notifier = notifier
+        self.store = store
+    
+    async def request(
+        self,
+        action: Action,
+        approvers: list[str],
+        timeout: int = 3600
+    ) -> ApprovalResult:
+        # Create request
+        request = ApprovalRequest(
+            id=generate_id(),
+            action=action,
+            approvers=approvers,
+            timeout=timeout
+        )
+        await self.store.save(request)
+        
+        # Notify approvers
+        await self.notifier.send(approvers, request)
+        
+        # Wait for decision
+        try:
+            return await asyncio.wait_for(
+                self.store.wait_for_decision(request.id),
+                timeout=timeout
+            )
+        except asyncio.TimeoutError:
+            return ApprovalResult(
+                granted=False,
+                reason="Timeout"
+            )
+```
+
+---
+
+## Notifiers
+
+### Slack
+```python
+class SlackNotifier:
+    async def send(self, approvers: list[str], request: ApprovalRequest):
+        blocks = [
+            {"type": "header", "text": {"type": "plain_text", "text": "🔐 Approval Required"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Tool:* {request.action.tool}"}},
+            {"type": "actions", "elements": [
+                {"type": "button", "text": {"type": "plain_text", "text": "Approve"}, "style": "primary"},
+                {"type": "button", "text": {"type": "plain_text", "text": "Deny"}, "style": "danger"}
+            ]}
+        ]
+        for approver in approvers:
+            await self.client.chat_postMessage(channel=approver, blocks=blocks)
+```
+
+### Email
+```python
+class EmailNotifier:
+    async def send(self, approvers: list[str], request: ApprovalRequest):
+        for approver in approvers:
+            await self.send_email(
+                to=approver,
+                subject=f"Approval Required: {request.action.tool}",
+                body=self.render_template(request)
+            )
+```
+
+---
+
+## Configuration
+```yaml
+approval:
+  default_timeout: 3600
+  timeout_action: DENY  # or ALLOW
+  
+  notifiers:
+    - type: slack
+      channel_mapping:
+        security-team: "#security-approvals"
+        database-owner: "@db-admin"
+    
+    - type: email
+      from: approvals@company.com
+  
+  escalation:
+    enabled: true
+    after: 1800  # 30 minutes
+    to: [security-manager]
+```
+
+---
+
+## Requirements
+
+| Requirement | Level |
+|-------------|-------|
+| Block until decision | MUST |
+| Route to configured approvers | MUST |
+| Enforce timeout | MUST |
+| Record decision in receipt | MUST |
+| Support multiple notifiers | SHOULD |
+| Escalation on non-response | SHOULD |
