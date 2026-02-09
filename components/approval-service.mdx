@@ -1,124 +1,218 @@
 ---
 title: Approval Service
-description: Human-in-the-loop authorization for high-risk actions.
+description: "Human-in-the-loop authorization for high-risk and ambiguous actions."
 ---
 
 ## Purpose
 
-The Approval Service implements step-up authorization:
+The Approval Service implements step-up authorization for actions that require human judgment before execution. It handles two authorization decisions from the [Policy Engine](/components/policy-engine):
 
-1. Receives actions requiring approval
-2. Routes to designated approvers
-3. Collects approval/denial decision
-4. Returns result to Policy Engine
+- **STEP_UP** — Action is high-risk and requires explicit human approval before proceeding
+- **DEFER → escalation** — Action was [deferred](/components/deferral-service) due to insufficient context, and automated resolution was unable to collect enough information; the deferral is escalated to a human approver
+
+In both cases, the action is **blocked from executing** until a human decision is received or a timeout fires.
+
+<Warning>
+  The Approval Service must present **full action context** to approvers — not just the action itself. Approvers who see only "Agent wants to send an email" cannot make informed decisions. Approvers who see the original user request, prior actions, data classifications accessed, and semantic distance score can.
+</Warning>
 
 ---
 
 ## Flow
+
 ```
-Action triggers STEP_UP policy
+Action triggers STEP_UP policy (or DEFER escalates)
          ↓
-Approval Service receives request
+Approval Service receives request with full context
+         ↓
+┌────────────────────────────────────────────────┐
+│  Approver sees:                                │
+│  • Original user request                       │
+│  • Action: tool, operation, parameters         │
+│  • Prior actions in session                    │
+│  • Data classifications accessed               │
+│  • Semantic distance from original intent      │
+│  • Identity: human principal + service + agent │
+│  • Why approval is needed (policy matched)     │
+└────────────────────────────────────────────────┘
          ↓
 Notification sent to approvers (Slack, email, etc.)
          ↓
-Approver reviews action details
+Approver reviews action + context
          ↓
     ┌────┴────┐
  Approve    Deny
     ↓         ↓
  Execute    Block
+    ↓         ↓
+Receipt generated with approver identity and decision
 ```
 
 ---
 
 ## Interface
+
 ```python
 @dataclass
 class ApprovalRequest:
     id: str
     action: Action
+    context: SessionContext         # Full accumulated context
+    identity: ActionIdentity       # Human + service + agent + role/privilege scope
     approvers: list[str]
-    timeout: int  # seconds
-    reason: str   # why approval needed
+    timeout: int                   # seconds
+    reason: str                    # Why approval is needed (policy matched)
+    source: Literal["step_up", "defer_escalation"]
+    semantic_distance: float | None  # Distance from original intent
 
-@dataclass 
+@dataclass
 class ApprovalResult:
     granted: bool
     approver: str | None
     reason: str | None
     timestamp: datetime
+    identity_verified: bool        # Was approver identity validated?
 
 class ApprovalService:
     async def request(
-        self, 
-        action: Action, 
+        self,
+        action: Action,
+        context: SessionContext,
+        identity: ActionIdentity,
         approvers: list[str],
-        timeout: int = 3600
+        timeout: int = 3600,
+        source: str = "step_up"
     ) -> ApprovalResult:
+        """Submit action for human approval. Blocks until decision or timeout."""
         ...
-    
+
     async def approve(self, request_id: str, approver: str):
+        """Approver grants execution. Identity is validated before acceptance."""
         ...
-    
+
     async def deny(self, request_id: str, approver: str, reason: str):
+        """Approver blocks execution with documented reason."""
         ...
 ```
 
 ---
 
 ## Implementation
+
 ```python
 class ApprovalService:
     def __init__(self, notifier: Notifier, store: ApprovalStore):
         self.notifier = notifier
         self.store = store
-    
+
     async def request(
         self,
         action: Action,
+        context: SessionContext,
+        identity: ActionIdentity,
         approvers: list[str],
-        timeout: int = 3600
+        timeout: int = 3600,
+        source: str = "step_up"
     ) -> ApprovalResult:
-        # Create request
+        # Create request with full context
         request = ApprovalRequest(
             id=generate_id(),
             action=action,
+            context=context,
+            identity=identity,
             approvers=approvers,
-            timeout=timeout
+            timeout=timeout,
+            reason=self._build_reason(action, context),
+            source=source,
+            semantic_distance=context.semantic_distance
         )
         await self.store.save(request)
-        
-        # Notify approvers
+
+        # Notify approvers with context summary
         await self.notifier.send(approvers, request)
-        
-        # Wait for decision
+
+        # Block until decision or timeout
         try:
-            return await asyncio.wait_for(
+            result = await asyncio.wait_for(
                 self.store.wait_for_decision(request.id),
                 timeout=timeout
             )
         except asyncio.TimeoutError:
-            return ApprovalResult(
+            result = ApprovalResult(
                 granted=False,
-                reason="Timeout"
+                approver=None,
+                reason="Timeout — no response within configured window",
+                timestamp=datetime.utcnow(),
+                identity_verified=False
             )
+
+        # Record in receipt regardless of outcome
+        await self.store.record_outcome(request.id, result)
+        return result
 ```
+
+---
+
+## Context Presentation
+
+Effective approval decisions require presenting the right information. The Approval Service should render context appropriate to the notification channel.
+
+### What Approvers Must See
+
+| Field | Why It Matters |
+|-------|---------------|
+| **Original user request** | Was the user actually asking for this? |
+| **Action details** | Tool, operation, parameters — what will happen |
+| **Prior actions** | What the agent already did in this session |
+| **Data classifications** | Did the agent access PII, CONFIDENTIAL, or other sensitive data? |
+| **Semantic distance** | How far has the agent drifted from the original request? |
+| **Identity chain** | Human principal → service account → agent session → role/privilege scope |
+| **Policy matched** | Which rule triggered this approval and why |
+| **Source** | Is this a direct STEP_UP or an escalated DEFER? |
+
+<Info>
+  **Approval fatigue is a real threat.** If every other action requires approval, approvers rubber-stamp without reading. The [Policy Engine](/components/policy-engine) and [Deferral Service](/components/deferral-service) should resolve what they can autonomously, routing only genuinely ambiguous or high-risk actions to humans. See [Research Directions](/research/open-challenges) for work on dynamic approval thresholds.
+</Info>
 
 ---
 
 ## Notifiers
 
 ### Slack
+
 ```python
 class SlackNotifier:
     async def send(self, approvers: list[str], request: ApprovalRequest):
+        source_label = (
+            "⏸️ Escalated from DEFER" 
+            if request.source == "defer_escalation" 
+            else "🔐 Approval Required"
+        )
+        drift_warning = ""
+        if request.semantic_distance and request.semantic_distance > 0.5:
+            drift_warning = f"\n⚠️ *Semantic distance:* {request.semantic_distance:.2f} — action may have drifted from original intent"
+
         blocks = [
-            {"type": "header", "text": {"type": "plain_text", "text": "🔐 Approval Required"}},
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Tool:* {request.action.tool}"}},
+            {"type": "header", "text": {
+                "type": "plain_text", "text": source_label
+            }},
+            {"type": "section", "text": {"type": "mrkdwn", "text": "\n".join([
+                f"*Tool:* `{request.action.tool}.{request.action.operation}`",
+                f"*User:* {request.identity.human_principal}",
+                f"*Original request:* {request.context.original_request[:200]}",
+                f"*Prior actions:* {len(request.context.prior_actions)} in session",
+                f"*Data accessed:* {', '.join(request.context.data_classifications) or 'None flagged'}",
+                f"*Reason:* {request.reason}",
+                drift_warning
+            ])}},
+            {"type": "section", "text": {"type": "mrkdwn", "text":
+                f"*Parameters:*\n```{json.dumps(request.action.parameters, indent=2)[:500]}```"
+            }},
             {"type": "actions", "elements": [
-                {"type": "button", "text": {"type": "plain_text", "text": "Approve"}, "style": "primary"},
-                {"type": "button", "text": {"type": "plain_text", "text": "Deny"}, "style": "danger"}
+                {"type": "button", "text": {"type": "plain_text", "text": "✅ Approve"},
+                 "style": "primary", "action_id": f"approve_{request.id}"},
+                {"type": "button", "text": {"type": "plain_text", "text": "❌ Deny"},
+                 "style": "danger", "action_id": f"deny_{request.id}"}
             ]}
         ]
         for approver in approvers:
@@ -126,24 +220,48 @@ class SlackNotifier:
 ```
 
 ### Email
+
 ```python
 class EmailNotifier:
     async def send(self, approvers: list[str], request: ApprovalRequest):
+        subject_prefix = (
+            "[DEFER ESCALATION]" 
+            if request.source == "defer_escalation" 
+            else "[APPROVAL REQUIRED]"
+        )
         for approver in approvers:
             await self.send_email(
                 to=approver,
-                subject=f"Approval Required: {request.action.tool}",
-                body=self.render_template(request)
+                subject=f"{subject_prefix} {request.action.tool}.{request.action.operation}",
+                body=self.render_template(request)  # Template includes full context
             )
 ```
 
 ---
 
+## Identity Preservation
+
+Actions may be deferred or queued for approval for extended periods. The Approval Service must preserve the identity context captured at the time of the original action submission:
+
+- **Human principal** at action time — not at approval time
+- **Service identity** and **agent session** from the original request
+- **Role and privilege scope** as they existed when the action was submitted
+
+<Warning>
+  If identity claims (tokens, sessions, role assignments) expire before approval is granted, the system must re-validate them before executing. Stale identity must never be used to authorize execution. See [R6: Identity Binding](/conformance/requirements#r6-identity-binding).
+</Warning>
+
+---
+
 ## Configuration
+
 ```yaml
 approval:
-  default_timeout: 3600
-  timeout_action: DENY  # or ALLOW
+  default_timeout: 3600       # 1 hour
+  timeout_action: DENY        # DENY on timeout (recommended)
+  
+  # Identity validation
+  revalidate_identity: true   # Re-check identity claims before executing approved actions
   
   notifiers:
     - type: slack
@@ -156,19 +274,42 @@ approval:
   
   escalation:
     enabled: true
-    after: 1800  # 30 minutes
+    after: 1800                # 30 minutes
     to: [security-manager]
+  
+  # Defer escalation handling
+  defer_escalation:
+    enabled: true
+    label_prefix: "[DEFER]"   # Visual distinction from direct STEP_UP
+    priority: high             # Deferred actions have been waiting longer
 ```
+
+---
+
+## Interaction with Deferral Service
+
+The Approval Service and [Deferral Service](/components/deferral-service) are complementary:
+
+| Decision | First handled by | Escalates to Approval Service when... |
+|----------|-----------------|--------------------------------------|
+| **STEP_UP** | Approval Service directly | — (starts here) |
+| **DEFER** | Deferral Service | Automated resolution fails or times out |
+
+When a deferred action escalates, the Approval Service receives the accumulated context from the Deferral Service's resolution attempts, giving the human approver more information than was available at the original deferral.
 
 ---
 
 ## Requirements
 
-| Requirement | Level |
-|-------------|-------|
-| Block until decision | MUST |
-| Route to configured approvers | MUST |
-| Enforce timeout | MUST |
-| Record decision in receipt | MUST |
-| Support multiple notifiers | SHOULD |
-| Escalation on non-response | SHOULD |
+| Requirement | Level | Notes |
+|-------------|-------|-------|
+| Block execution until decision received | MUST | No effects may occur before approval (R1, R4) |
+| Route to configured approvers | MUST | |
+| Enforce configurable timeout | MUST | DENY on timeout recommended (R4) |
+| Present full action context to approvers | MUST | Original request, prior actions, data classifications, identity chain |
+| Record approver identity and decision in receipt | MUST | Including timestamp and reason (R5) |
+| Preserve original identity context across deferral/approval | MUST | Re-validate before executing if claims may have expired (R6) |
+| Accept escalations from Deferral Service | MUST | DEFER → STEP_UP pathway |
+| Support multiple notification channels | SHOULD | Slack, email, webhook, etc. |
+| Escalation on non-response | SHOULD | Route to backup approver after configurable window |
+| Visual distinction between STEP_UP and DEFER escalations | SHOULD | Approvers should know why they're being asked |
