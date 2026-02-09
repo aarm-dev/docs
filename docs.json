@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "AARM Specification",
+  "name": "AARM Specification v0.1",
   "colors": {
     "primary": "#0f172a",
     "light": "#07C983",
@@ -25,16 +25,6 @@
             ]
           },
           {
-            "group": "Threat Model",
-            "pages": [
-              "threats/overview",
-              "threats/prompt-injection",
-              "threats/confused-deputy",
-              "threats/data-exfiltration",
-              "threats/intent-drift"
-            ]
-          },
-          {
             "group": "System Components",
             "pages": [
               "components/overview",
@@ -42,6 +32,7 @@
               "components/context-accumulator",
               "components/policy-engine",
               "components/approval-service",
+              "components/deferral-service",
               "components/receipts",
               "components/telemetry"
             ]
@@ -52,15 +43,39 @@
               "architectures/overview",
               "architectures/gateway",
               "architectures/sdk",
-              "architectures/ebpf"
-              "architectures/vendor-integration"
+              "architectures/ebpf",
+              "architectures/vendor-integration",
+              "architectures/layered-deployment"
             ]
+            {
+            "group": "Threat Model",
+            "pages": [
+              "threats/overview",
+              "threats/prompt-injection",
+              "threats/malicious-tool-outputs",
+              "threats/confused-deputy",
+              "threats/over-privileged-credentials",
+              "threats/data-exfiltration",
+              "threats/goal-hijacking",
+              "threats/intent-drift",
+              "threats/memory-poisoning",
+              "threats/cross-agent-propagation",
+              "threats/side-channel-leakage",
+              "threats/environmental-manipulation"
+            ]
+          },
           },
           {
             "group": "Conformance",
             "pages": [
               "conformance/requirements",
               "conformance/testing"
+            ]
+          },
+          {
+            "group": "Research Directions",
+            "pages": [
+              "research/open-challenges"
             ]
           }
         ]
@@ -80,11 +95,12 @@
             "pages": [
               "patterns/mcp-gateway",
               "patterns/approval-flows",
+              "patterns/deferral-flows",
               "patterns/receipt-signing"
             ]
           }
         ]
-      },
+      }
     ],
     "global": {
       "anchors": [
