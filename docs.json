@@ -53,6 +53,7 @@
               "architectures/gateway",
               "architectures/sdk",
               "architectures/ebpf"
+              "architectures/vendor-integration"
             ]
           },
           {
