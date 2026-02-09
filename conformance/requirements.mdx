@@ -1,0 +1,109 @@
+---
+title: Conformance Requirements
+description: What a system must do to be AARM-compliant.
+---
+
+## Conformance Levels
+
+| Level | Requirements |
+|-------|--------------|
+| **AARM Core** | R1–R5 (all MUST) |
+| **AARM Extended** | R1–R8 (all MUST + SHOULD) |
+
+---
+
+## Required (MUST)
+
+### R1: In-Line Authorization
+
+Block actions before execution based on policy.
+```
+✓ Denied actions do not execute
+✓ No effects on target systems
+✓ Denial recorded in receipt
+```
+
+### R2: Parameter Validation
+
+Validate parameters against constraints.
+```
+✓ Type validation
+✓ Range/limit enforcement  
+✓ Allowlist/blocklist matching
+✓ Pattern validation
+```
+
+### R3: Step-Up Authorization
+
+Support human approval workflows.
+```
+✓ Execution blocks pending approval
+✓ Configurable approver routing
+✓ Timeout handling
+✓ Decision recorded in receipt
+```
+
+### R4: Tamper-Evident Receipts
+
+Generate signed receipts for all actions.
+```
+✓ Complete action representation
+✓ Policy decision and reason
+✓ Cryptographic signature
+✓ Offline verification
+```
+
+### R5: Identity Binding
+
+Bind actions to identities.
+```
+✓ Human principal
+✓ Service identity
+✓ Session context
+```
+
+---
+
+## Recommended (SHOULD)
+
+### R6: Least Privilege
+
+Support credential scoping.
+```
+○ Just-in-time issuance
+○ Operation-specific scoping
+○ Automatic rotation
+```
+
+### R7: Telemetry Export
+
+Export to security platforms.
+```
+○ Real-time streaming
+○ Standard schemas (OCSF)
+○ Configurable filtering
+```
+
+### R8: Effect Capture
+
+Record downstream state changes.
+```
+○ State hashes
+○ Resource identifiers
+○ Downstream correlation
+```
+
+---
+
+## Summary Table
+
+| ID | Level | Requirement |
+|----|-------|-------------|
+| R1 | MUST | Block before execution |
+| R2 | MUST | Parameter validation |
+| R3 | MUST | Human approval workflows |
+| R4 | MUST | Signed receipts |
+| R5 | MUST | Identity binding |
+| R6 | SHOULD | Least privilege |
+| R7 | SHOULD | Telemetry export |
+| R8 | SHOULD | Effect capture |
