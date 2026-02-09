@@ -1,0 +1,159 @@
+---
+title: Receipt Generator
+description: Creates tamper-evident audit records for every action.
+---
+
+## Purpose
+
+The Receipt Generator creates a signed record for every action:
+
+- What was requested
+- What decision was made
+- What happened
+- Cryptographic proof of integrity
+
+---
+
+## Receipt Schema
+```json
+{
+  "receipt_id": "rct_3d4e5f6a",
+  "version": "1.0",
+  
+  "action": {
+    "action_id": "act_1a2b3c4d",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "tool": "database",
+    "operation": "query",
+    "parameters": {"query": "SELECT * FROM users", "limit": 100},
+    "identity": {
+      "human": "alice@company.com",
+      "service": "agent-svc",
+      "session": "sess_xyz"
+    }
+  },
+  
+  "decision": {
+    "result": "ALLOW",
+    "policy_id": null,
+    "reason": null
+  },
+  
+  "approval": null,
+  
+  "execution": {
+    "started_at": "2025-01-15T10:30:00.050Z",
+    "completed_at": "2025-01-15T10:30:00.120Z",
+    "success": true,
+    "output_hash": "sha256:abc123..."
+  },
+  
+  "signature": {
+    "algorithm": "Ed25519",
+    "key_id": "aarm-2025-01",
+    "value": "base64..."
+  }
+}
+```
+
+---
+
+## Implementation
+```python
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import json
+import base64
+
+class ReceiptGenerator:
+    def __init__(self, private_key: Ed25519PrivateKey, key_id: str):
+        self.private_key = private_key
+        self.key_id = key_id
+    
+    def generate(
+        self,
+        action: Action,
+        decision: Decision,
+        approval: ApprovalResult | None,
+        execution: ExecutionResult | None
+    ) -> Receipt:
+        receipt = {
+            "receipt_id": f"rct_{generate_id()}",
+            "version": "1.0",
+            "action": action.to_dict(),
+            "decision": decision.to_dict(),
+            "approval": approval.to_dict() if approval else None,
+            "execution": execution.to_dict() if execution else None,
+        }
+        
+        receipt["signature"] = self.sign(receipt)
+        return receipt
+    
+    def sign(self, receipt: dict) -> dict:
+        content = {k: v for k, v in receipt.items() if k != "signature"}
+        canonical = json.dumps(content, sort_keys=True, separators=(",", ":"))
+        signature = self.private_key.sign(canonical.encode())
+        
+        return {
+            "algorithm": "Ed25519",
+            "key_id": self.key_id,
+            "value": base64.b64encode(signature).decode()
+        }
+```
+
+---
+
+## Verification
+```python
+class ReceiptVerifier:
+    def __init__(self, public_keys: dict[str, Ed25519PublicKey]):
+        self.public_keys = public_keys
+    
+    def verify(self, receipt: dict) -> bool:
+        sig = receipt.get("signature", {})
+        key = self.public_keys.get(sig.get("key_id"))
+        if not key:
+            return False
+        
+        content = {k: v for k, v in receipt.items() if k != "signature"}
+        canonical = json.dumps(content, sort_keys=True, separators=(",", ":"))
+        
+        try:
+            key.verify(
+                base64.b64decode(sig["value"]),
+                canonical.encode()
+            )
+            return True
+        except:
+            return False
+```
+
+---
+
+## Storage
+
+Receipts should be stored in append-only, immutable storage:
+```sql
+CREATE TABLE receipts (
+    receipt_id VARCHAR PRIMARY KEY,
+    action_id VARCHAR NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL,
+    tool VARCHAR NOT NULL,
+    decision VARCHAR NOT NULL,
+    receipt_json JSONB NOT NULL,
+    
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_action (action_id)
+);
+```
+
+---
+
+## Requirements
+
+| Requirement | Level |
+|-------------|-------|
+| Receipt for every action | MUST |
+| Cryptographic signature | MUST |
+| Offline verification | MUST |
+| Include full action + decision | MUST |
+| Append-only storage | SHOULD |
