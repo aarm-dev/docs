@@ -1,0 +1,131 @@
+---
+title: "Architecture D: Vendor Integration"
+sidebarTitle: Vendor Integration
+description: "AARM for SaaS agents where you control nothing but policy."
+---
+
+## Description
+
+Enterprises increasingly use SaaS agents (ChatGPT, Claude.ai, Microsoft Copilot) where they control none of the infrastructure — no network paths, no runtime code, no compute environments.
+
+For these environments, AARM enforcement must occur inside the vendor's infrastructure. Architecture D positions AARM as a vendor-side extension. The vendor provides hooks that execute before tool invocations, allowing customers to plug in AARM-conformant policy engines.
+
+```
+┌──────────────────────────────────────────┐
+│           Vendor Environment             │
+│  ┌────────┐   ┌─────────┐   ┌────────┐  │
+│  │ Agent  │──►│  AARM   │──►│ Tools  │  │
+│  │        │   │Extension│   │        │  │
+│  └────────┘   └────┬────┘   └────────┘  │
+│                    │                     │
+└────────────────────┼─────────────────────┘
+                     │ evaluate
+                     ▼
+              ┌─────────────┐
+              │  Customer   │
+              │  Policy     │
+              │  Service    │
+              └─────────────┘
+```
+
+---
+
+## Synchronous Execution Requirement
+
+<Warning>
+  Vendor-side governance hooks **MUST execute synchronously and prior to any side-effectful tool execution**. No tool effects may occur before the hook returns a decision.
+
+  Asynchronous or best-effort hooks that permit execution to proceed before evaluation completes **do not satisfy AARM requirements**.
+</Warning>
+
+---
+
+## The Integration Model
+
+If a vendor allows customers to install tools that **expand** what an agent can do (plugins, MCP servers, extensions), they should equally allow governance extensions that **constrain** what an agent can do. The integration surface is identical; only the purpose differs.
+
+| Domain | Capability Extension | Governance Extension |
+|--------|---------------------|---------------------|
+| Browsers | Extensions (add features) | Content blockers, policy engines |
+| Mobile | Apps (add capabilities) | MDM profiles (constrain behavior) |
+| Cloud | Services (add capabilities) | IAM policies, SCPs (constrain access) |
+| Agents | Tools/Plugins (add actions) | AARM (constrain actions) |
+
+Every mature platform eventually needs both. Agents are early in this evolution.
+
+---
+
+## Vendor Requirements
+
+For Architecture D to function, vendors must provide:
+
+| Requirement | Details |
+|-------------|---------|
+| **Pre-action hook** | Synchronous callback before each tool invocation with action details and context |
+| **Decision enforcement** | Block, modify, defer, or escalate based on extension response (ALLOW, DENY, MODIFY, STEP_UP, DEFER) |
+| **Context availability** | At minimum: tool, operation, parameters, user identity, session ID. Richer context enables stronger policies |
+| **Receipt export** | Export or receive action receipts for customer audit trails |
+| **Timeout handling** | Configurable behavior when policy service is unavailable. Fail closed (DENY) MUST be supported |
+
+---
+
+## Action Classification Support
+
+| Classification | Support | Dependency |
+|---------------|---------|------------|
+| Forbidden | ✅ Full | Requires only tool + parameters |
+| Context-Dependent Deny | Varies | Requires vendor to expose prior actions and data classifications |
+| Context-Dependent Allow | Varies | Requires vendor to expose original request and conversation history |
+| Context-Dependent Defer | ⚠️ Limited–Moderate | Can suspend when vendor provides partial or ambiguous context |
+
+---
+
+## Trust Properties
+
+| Property | Value |
+|----------|-------|
+| **Enforcement point** | Inside vendor runtime at vendor-provided hook |
+| **Bypass resistance** | Depends entirely on vendor implementation quality |
+| **Context richness** | Depends on what vendor exposes |
+| **Customer control** | Policy logic is customer-controlled; enforcement is vendor-controlled |
+| **Trust dependency** | Must trust vendor implements hooks correctly — unique to this architecture |
+
+---
+
+## Driving Vendor Adoption
+
+Architecture D creates a collective action problem. AARM addresses this by defining what governance hooks should provide:
+
+- **Customer requirements:** Enterprises can require AARM-compatible hooks in vendor evaluations
+- **Vendor differentiation:** Enterprise-focused vendors differentiate by offering AARM-compliant integration
+- **Ecosystem development:** Third-party AARM implementations target a standard interface
+
+The goal: shift from "does this vendor support governance?" to "is this vendor's governance AARM-compliant?"
+
+---
+
+## Precedent
+
+| Standard | Pattern |
+|----------|---------|
+| OAuth/OIDC | Standardized authentication hooks — customers bring their own identity provider |
+| SCIM | Standardized provisioning hooks for user lifecycle |
+| MDM profiles | Platform vendors provide hooks for enterprise policy enforcement |
+| AARM | Standardized governance hooks — customers bring their own policy engine |
+
+AARM is to agent actions what OAuth is to authentication.
+
+---
+
+## When to Use
+
+- Agent is a SaaS product (ChatGPT, Claude.ai, Copilot)
+- You do not control the network, code, or host
+- Vendor offers synchronous governance hooks
+- Policy enforcement on third-party agents is required
+
+## When Not to Use
+
+- Vendor does not offer governance hooks (push for support)
+- Trust in vendor implementation is not acceptable
+- Latency requirements cannot accommodate external policy evaluation
