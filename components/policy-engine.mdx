@@ -1,0 +1,149 @@
+---
+title: Policy Engine
+description: Evaluates actions against policy rules and enforces decisions.
+---
+
+## Overview
+
+The Policy Engine has two logical components:
+
+- **Policy Decision Point (PDP)**: Evaluates actions, returns decisions
+- **Policy Enforcement Point (PEP)**: Implements decisions
+
+---
+
+## Policy Decision Point
+
+The PDP evaluates an action and returns a decision:
+```python
+class PolicyDecisionPoint:
+    def __init__(self, policy_store: PolicyStore):
+        self.policies = policy_store
+    
+    def evaluate(self, action: Action) -> Decision:
+        for rule in self.policies.get_rules():
+            if self.matches(rule, action):
+                return Decision(
+                    result=rule.action,
+                    policy_id=rule.id,
+                    reason=rule.reason,
+                    modifications=rule.modifications,
+                    approvers=rule.approvers
+                )
+        
+        # Default allow if no rules match
+        return Decision(result="ALLOW")
+```
+
+### Decision Types
+
+| Decision | Behavior |
+|----------|----------|
+| `ALLOW` | Forward action to tool |
+| `DENY` | Block action, return error |
+| `MODIFY` | Rewrite parameters, then forward |
+| `STEP_UP` | Require human approval |
+
+---
+
+## Policy Enforcement Point
+
+The PEP implements the decision:
+```python
+class PolicyEnforcementPoint:
+    def enforce(self, action: Action, decision: Decision) -> Result:
+        match decision.result:
+            case "DENY":
+                raise PolicyDenied(decision.reason)
+            
+            case "MODIFY":
+                action.parameters = decision.apply_modifications(
+                    action.parameters
+                )
+                return self.execute(action)
+            
+            case "STEP_UP":
+                approval = self.approval_service.request(
+                    action, 
+                    decision.approvers
+                )
+                if not approval.granted:
+                    raise ApprovalDenied(approval.reason)
+                return self.execute(action)
+            
+            case "ALLOW":
+                return self.execute(action)
+```
+
+---
+
+## Policy Syntax
+```yaml
+rules:
+  - id: block-pii-external
+    name: Block PII to external recipients
+    match:
+      tool: email
+      operation: send
+      parameters:
+        to: { external: true }
+      context:
+        data_classification: PII
+    action: DENY
+    reason: "Cannot send PII externally"
+```
+
+### Match Conditions
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `tool` | Tool name | `email`, `database` |
+| `operation` | Operation type | `send`, `query`, `delete` |
+| `parameters` | Parameter constraints | `{ to: { external: true } }` |
+| `context` | Session context | `{ data_classification: PII }` |
+| `risk_signals` | Computed scores | `{ injection_score: { gt: 0.8 } }` |
+
+### Operators
+
+| Operator | Meaning |
+|----------|---------|
+| `{ eq: value }` | Equals |
+| `{ gt: value }` | Greater than |
+| `{ lt: value }` | Less than |
+| `{ contains: value }` | Array contains |
+| `{ matches: regex }` | Regex match |
+| `{ external: true }` | External destination |
+
+---
+
+## Policy Loading
+
+Policies can be loaded from files or remote service:
+```python
+class PolicyStore:
+    def __init__(self, source: str):
+        if source.startswith("http"):
+            self.loader = RemotePolicyLoader(source)
+        else:
+            self.loader = FilePolicyLoader(source)
+    
+    def get_rules(self) -> list[Rule]:
+        return self.loader.load()
+    
+    def reload(self):
+        self.loader.reload()
+```
+
+Support hot-reload for policy updates without restart.
+
+---
+
+## Requirements
+
+| Requirement | Level |
+|-------------|-------|
+| Evaluate before execution | MUST |
+| Support ALLOW/DENY/MODIFY/STEP_UP | MUST |
+| Parameter validation | MUST |
+| Context-aware matching | SHOULD |
+| Hot reload policies | SHOULD |
