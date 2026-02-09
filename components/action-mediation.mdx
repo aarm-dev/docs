@@ -112,6 +112,16 @@ def build_context(self, request) -> Context:
 
 ---
 
+<Note>
+
+**Meta-Tool Resolution:** Some agent platforms use wrapper tools (meta-tools) where the actual tool identity is embedded in the parameters. For example, an MCP invocation may arrive as `tool_name: "mcp_tool"` with the actual server and tool names in the parameters JSON. The AML MUST resolve these before policy evaluation.
+
+See [OpenTelemetry Ingestion: Meta-Tool Resolution](/patterns/otel-ingestion#meta-tool-resolution).
+
+</Note>
+
+---
+
 ## Requirements
 
 | Requirement | Description |
@@ -120,3 +130,4 @@ def build_context(self, request) -> Context:
 | Schema compliance | Output must conform to AARM action schema |
 | Identity binding | Every action must have identity context |
 | Idempotent | Same request produces same action representation |
+| Meta-tool resolution | Wrapper tools must be resolved to actual tool identity before policy evaluation |
