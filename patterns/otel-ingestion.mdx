@@ -29,31 +29,31 @@ This is an **observational** pattern. It enables detection and alerting but not 
 ## Architecture
 
 ```
-┌──────────────┐     OTLP gRPC/HTTP      ┌─────────────────┐
+┌──────────────┐     OTLP gRPC/HTTP        ┌─────────────────┐
 │  AI Agent    │ ────────────────────────► │  AARM Receiver  │
-│ (Claude Code,│   Logs, Metrics, Traces  │  (OTLP Endpoint)│
-│  Copilot,    │                          └────────┬────────┘
-│  custom)     │                                   │
-└──────────────┘                          ┌────────▼────────┐
-                                          │  Action Parser  │
-                                          │  • Tool events  │
-                                          │  • Meta-tool    │
-                                          │    unwrapping   │
-                                          │  • HITL signals │
-                                          └────────┬────────┘
-                                                   │
-                                          ┌────────▼────────┐
-                                          │ Policy Engine   │
-                                          │ (OPA / custom)  │
-                                          └────────┬────────┘
-                                                   │
-                                     ┌─────────────┼─────────────┐
-                                     ▼             ▼             ▼
-                              ┌──────────┐  ┌──────────┐  ┌──────────┐
-                              │ Storage  │  │ Alerting │  │ Telemetry│
+│ (Claude Code,│   Logs, Metrics, Traces   │  (OTLP Endpoint)│
+│  Copilot,    │                           └────────┬────────┘
+│  custom)     │                                    │
+└──────────────┘                           ┌────────▼────────┐
+                                           │  Action Parser  │
+                                           │  • Tool events  │
+                                           │  • Meta-tool    │
+                                           │    unwrapping   │
+                                           │  • HITL signals │
+                                           └────────┬────────┘
+                                                    │
+                                           ┌────────▼────────┐
+                                           │ Policy Engine   │
+                                           │ (OPA / custom)  │
+                                           └────────┬────────┘
+                                                    │
+                                      ┌─────────────┼─────────────┐
+                                      ▼             ▼             ▼
+                              ┌───────────┐  ┌──────────┐  ┌──────────┐
+                              │ Storage   │  │ Alerting │  │ Telemetry│
                               │(ClickHouse│  │(Slack,   │  │ Exporter │
-                              │ Elastic) │  │ PagerDuty│  │(SIEM)    │
-                              └──────────┘  └──────────┘  └──────────┘
+                              │ Elastic)  │  │ PagerDuty│  │ (SIEM)   │
+                              └───────────┘  └──────────┘  └──────────┘
 ```
 
 ---
