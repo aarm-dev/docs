@@ -1,0 +1,209 @@
+---
+title: "First Policy"
+description: "Learn AARM policy syntax by writing rules for common scenarios."
+---
+
+## Policy Structure
+
+An AARM policy has three parts:
+```yaml
+policy:
+  id: unique-policy-id
+  version: "1.0"
+  description: Human-readable description
+
+rules:
+  - id: rule-001
+    name: descriptive-name
+    match: { }      # When does this rule apply?
+    action: DENY    # What happens?
+    reason: "Why"   # Human-readable explanation
+```
+
+---
+
+## Match Conditions
+
+### Tool and Operation
+
+Match specific tools and operations:
+```yaml
+match:
+  tool: database
+  operation: delete
+```
+
+### Parameters
+
+Match parameter values:
+```yaml
+match:
+  tool: email
+  operation: send
+  parameters:
+    to: { external: true }           # Custom predicate
+    subject: { contains: "URGENT" }  # String matching
+```
+
+### Context
+
+Match session context:
+```yaml
+match:
+  tool: http
+  operation: post
+  context:
+    data_classification: [PII, PHI]  # Data accessed this session
+    prior_actions: { contains: "db.query" }
+```
+
+### Risk Signals
+
+Match computed risk scores:
+```yaml
+match:
+  risk_signals:
+    injection_score: { gt: 0.8 }
+    anomaly_score: { gt: 0.7 }
+```
+
+---
+
+## Actions
+
+| Action | Behavior |
+|--------|----------|
+| `ALLOW` | Execute the action |
+| `DENY` | Block with reason |
+| `MODIFY` | Rewrite parameters, then execute |
+| `STEP_UP` | Require human approval |
+
+### MODIFY Example
+
+Cap query results:
+```yaml
+rules:
+  - id: limit-bulk-queries
+    match:
+      tool: database
+      operation: query
+      parameters:
+        limit: { gt: 100 }
+    action: MODIFY
+    modifications:
+      parameters:
+        limit: 100
+    reason: "Query results capped at 100 rows"
+```
+
+### STEP_UP Example
+
+Require approval for destructive operations:
+```yaml
+rules:
+  - id: approve-destructive-db
+    match:
+      tool: database
+      operation: [delete, drop, truncate]
+    action: STEP_UP
+    approvers: [database-owner, security-team]
+    timeout: 3600
+    timeout_action: DENY
+```
+
+---
+
+## Common Patterns
+
+### Block External Data Transfer
+```yaml
+rules:
+  - id: block-pii-external
+    match:
+      tool: [email, http, slack]
+      parameters:
+        destination: { external: true }
+      context:
+        data_classification: PII
+    action: DENY
+    reason: "Cannot send PII externally"
+```
+
+### Destination Allowlist
+```yaml
+rules:
+  - id: email-allowlist
+    match:
+      tool: email
+      operation: send
+    constraints:
+      parameters.to:
+        domain_allowlist:
+          - "company.com"
+          - "trusted-partner.org"
+    action: DENY
+    reason: "Recipient domain not in allowlist"
+```
+
+### Rate Limiting
+```yaml
+rules:
+  - id: rate-limit-api-calls
+    match:
+      tool: external_api
+    constraints:
+      rate:
+        max: 100
+        window: 3600  # per hour
+    action: DENY
+    reason: "Rate limit exceeded"
+```
+
+### Require Approval Above Threshold
+```yaml
+rules:
+  - id: approve-large-transactions
+    match:
+      tool: payment
+      operation: transfer
+      parameters:
+        amount: { gt: 10000 }
+    action: STEP_UP
+    approvers: [finance-manager]
+```
+
+---
+
+## Testing Policies
+
+Test policies before deployment:
+```python
+from aarm.policy_engine import PolicyEngine
+
+engine = PolicyEngine("policies/my-policy.yaml")
+
+# Test action that should be denied
+action = {
+    "tool": "email",
+    "operation": "send",
+    "parameters": {"to": "external@gmail.com"},
+    "context": {"data_classification": ["PII"]}
+}
+
+decision = engine.evaluate(action)
+assert decision.result == "DENY"
+assert "PII" in decision.reason
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Approval Flows" icon="user-check" href="/patterns/approval-flows">
+    Implement step-up authorization
+  </Card>
+  <Card title="Receipt Signing" icon="signature" href="/patterns/receipt-signing">
+    Cryptographic audit trails
+  </Card>
+</CardGroup>
