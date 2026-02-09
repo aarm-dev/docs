@@ -1,0 +1,122 @@
+---
+title: Action Mediation Layer
+description: Intercepts tool invocations and normalizes them to AARM's canonical action schema.
+---
+
+## Purpose
+
+The Action Mediation Layer (AML) is the entry point for all tool invocations. It:
+
+1. **Intercepts** requests before they reach tools
+2. **Normalizes** protocol-specific formats to AARM schema
+3. **Enriches** with identity and context
+4. **Forwards** to Policy Decision Point
+
+---
+
+## Action Schema
+
+Every action is normalized to this schema:
+```json
+{
+  "action_id": "act_7f8a9b2c",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "tool": "email",
+  "operation": "send",
+  "parameters": {
+    "to": "recipient@example.com",
+    "subject": "Report",
+    "body": "..."
+  },
+  "identity": {
+    "human": "alice@company.com",
+    "service": "agent-svc",
+    "session": "sess_abc123"
+  },
+  "context": {
+    "conversation_id": "conv_xyz",
+    "prior_actions": ["db.query"],
+    "data_classification": ["PII"]
+  },
+  "risk_signals": {
+    "injection_score": 0.12
+  }
+}
+```
+
+---
+
+## Protocol Adapters
+
+The AML includes adapters for different tool protocols:
+
+### MCP Adapter
+```python
+class MCPAdapter:
+    def to_action(self, request: MCPToolCall) -> Action:
+        return Action(
+            tool=request.tool_name,
+            operation=request.method,
+            parameters=request.params,
+            identity=self.extract_identity(request.metadata),
+            context=self.build_context(request),
+            timestamp=datetime.utcnow()
+        )
+```
+
+### HTTP Adapter
+```python
+class HTTPAdapter:
+    def to_action(self, request: HTTPRequest) -> Action:
+        return Action(
+            tool=self.identify_tool(request.url),
+            operation=request.method.lower(),
+            parameters=request.json or request.form,
+            identity=self.extract_identity(request.headers),
+            context=self.build_context(request),
+            timestamp=datetime.utcnow()
+        )
+```
+
+---
+
+## Identity Extraction
+
+The AML extracts identity from request metadata:
+```python
+def extract_identity(self, metadata: dict) -> Identity:
+    return Identity(
+        human=metadata.get("x-user-id"),
+        service=metadata.get("x-service-id"),
+        session=metadata.get("x-session-id"),
+    )
+```
+
+Identity claims should be validated against trusted sources (IdP, service registry).
+
+---
+
+## Context Building
+
+Context includes session state relevant to policy decisions:
+```python
+def build_context(self, request) -> Context:
+    session = self.session_store.get(request.session_id)
+    return Context(
+        conversation_id=session.conversation_id,
+        prior_actions=session.action_history[-10:],
+        data_classification=session.data_accessed,
+        environment=self.get_environment()
+    )
+```
+
+---
+
+## Requirements
+
+| Requirement | Description |
+|-------------|-------------|
+| Complete interception | All tool invocations must pass through AML |
+| Schema compliance | Output must conform to AARM action schema |
+| Identity binding | Every action must have identity context |
+| Idempotent | Same request produces same action representation |
