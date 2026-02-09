@@ -113,7 +113,9 @@ def build_context(self, request) -> Context:
 ---
 
 <Note>
-<strong>Meta-Tool Resolution:</strong> Some agent platforms use wrapper tools (meta-tools) where the actual tool identity is embedded in the parameters. For example, an MCP invocation may arrive as <code>tool_name: "mcp_tool"</code> with the actual server and tool names in the parameters JSON. The AML MUST resolve these before policy evaluation. See <a href="/patterns/otel-ingestion#meta-tool-resolution">OpenTelemetry Ingestion: Meta-Tool Resolution</a>.
+**Meta-Tool Resolution:** Some agent platforms use wrapper tools (meta-tools) where the actual tool identity is embedded in the parameters. For example, an MCP invocation may arrive as `tool_name: "mcp_tool"` with the actual server and tool names in the parameters JSON. The AML MUST resolve these before policy evaluation.
+
+See [OpenTelemetry Ingestion: Meta-Tool Resolution](/patterns/otel-ingestion#meta-tool-resolution).
 </Note>
 
 ---
