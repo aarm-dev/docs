@@ -1,0 +1,79 @@
+---
+title: Protocol Gateway
+description: AARM as a network-level proxy for MCP and other tool protocols.
+---
+
+## Overview
+
+The gateway architecture places AARM as a proxy between agents and tool servers:
+```
+Agent ──► AARM Gateway ──► MCP Server (Database)
+                       ──► MCP Server (Email)
+                       ──► MCP Server (Filesystem)
+```
+
+---
+
+## Properties
+
+| Property | Value |
+|----------|-------|
+| Enforcement point | Network |
+| Bypass resistance | High |
+| Semantic visibility | High (MCP provides schemas) |
+| Integration effort | Low (URL change only) |
+| Context access | Limited to request metadata |
+
+---
+
+## Implementation
+```python
+class AARMGateway(MCPServer):
+    def __init__(self, backend_url: str, policy_path: str):
+        self.backend = MCPClient(backend_url)
+        self.policy = PolicyEngine(policy_path)
+        self.receipts = ReceiptGenerator()
+    
+    async def handle_tool_call(self, request):
+        action = self.build_action(request)
+        decision = self.policy.evaluate(action)
+        
+        if decision.result == "DENY":
+            self.receipts.emit(action, decision, None)
+            return error_response(decision.reason)
+        
+        result = await self.backend.call(request)
+        self.receipts.emit(action, decision, result)
+        return result
+```
+
+---
+
+## Network Configuration
+
+Ensure agents route through gateway:
+```yaml
+# Kubernetes NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aarm-gateway-only
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-agent
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: aarm-gateway
+```
+
+---
+
+## Limitations
+
+- Only covers MCP-based tools
+- No access to agent internal state
+- Requires network configuration
+- Adds network hop latency
