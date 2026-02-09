@@ -1,79 +1,70 @@
 ---
-title: Protocol Gateway
-description: AARM as a network-level proxy for MCP and other tool protocols.
+title: "Architecture A: Protocol Gateway"
+sidebarTitle: Protocol Gateway
+description: "AARM as a network-level proxy intercepting tool protocol traffic."
 ---
 
-## Overview
+## Description
 
-The gateway architecture places AARM as a proxy between agents and tool servers:
+AARM operates as a proxy server implementing the tool protocol (e.g., Model Context Protocol). Agents connect to the AARM gateway instead of directly to tool servers. The gateway intercepts all tool invocations, accumulates session context, evaluates policies including intent alignment, and forwards permitted requests to backend servers.
+
 ```
-Agent ──► AARM Gateway ──► MCP Server (Database)
-                       ──► MCP Server (Email)
-                       ──► MCP Server (Filesystem)
+┌──────────┐       ┌──────────────┐       ┌────────────────┐
+│  Agent   │──────►│  AARM        │──────►│  Tool Server   │
+│  Runtime │       │  Gateway     │       │  (Database)    │
+│          │◄──────│              │──────►│  Tool Server   │
+│          │       │              │       │  (Email)       │
+└──────────┘       └──────────────┘       └────────────────┘
 ```
+
+This follows the established pattern of security gateways and service meshes: a trusted intermediary that interposes on communication channels. The approach has proven effective in API security (API gateways), service-to-service communication (Envoy, Istio), and database access (SQL proxies).
 
 ---
 
-## Properties
+## Trust Properties
 
 | Property | Value |
 |----------|-------|
-| Enforcement point | Network |
-| Bypass resistance | High |
-| Semantic visibility | High (MCP provides schemas) |
-| Integration effort | Low (URL change only) |
-| Context access | Limited to request metadata |
+| **Enforcement point** | Network level — all tool traffic routes through the gateway |
+| **Schema visibility** | Full — structured tool protocols provide parameter schemas |
+| **Context accumulation** | Session context tracked across requests, keyed by session ID |
+| **Agent modification** | Minimal — only the tool endpoint URL changes |
+| **Failure mode** | Fail closed — tool calls fail if gateway is unavailable |
 
 ---
 
-## Implementation
-```python
-class AARMGateway(MCPServer):
-    def __init__(self, backend_url: str, policy_path: str):
-        self.backend = MCPClient(backend_url)
-        self.policy = PolicyEngine(policy_path)
-        self.receipts = ReceiptGenerator()
-    
-    async def handle_tool_call(self, request):
-        action = self.build_action(request)
-        decision = self.policy.evaluate(action)
-        
-        if decision.result == "DENY":
-            self.receipts.emit(action, decision, None)
-            return error_response(decision.reason)
-        
-        result = await self.backend.call(request)
-        self.receipts.emit(action, decision, result)
-        return result
-```
+## Coverage
+
+| Scope | Coverage |
+|-------|----------|
+| **Covered** | All tools exposed via protocol servers routed through the gateway |
+| **Not covered** | Direct HTTP calls bypassing the protocol, raw database connections, local filesystem access, shell command execution |
+| **Context limitation** | Sees action requests/responses but not internal agent state or reasoning |
+
+For context-aware evaluation, the gateway must receive the original user request via session initialization (recommended), infer intent from action patterns, or integrate with application-level context sources.
 
 ---
 
-## Network Configuration
+## Action Classification Support
 
-Ensure agents route through gateway:
-```yaml
-# Kubernetes NetworkPolicy
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: aarm-gateway-only
-spec:
-  podSelector:
-    matchLabels:
-      app: ai-agent
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app: aarm-gateway
-```
+| Classification | Support | Notes |
+|---------------|---------|-------|
+| Forbidden | ✅ Full | Static policy rules match tool/operation patterns |
+| Context-Dependent Deny | ✅ Good | Checks accumulated context after static ALLOW |
+| Context-Dependent Allow | ⚠️ Partial | Requires original request passed via session init |
+| Context-Dependent Defer | ⚠️ Partial | Can hold execution but may lack signals to resolve autonomously |
 
 ---
 
-## Limitations
+## When to Use
 
-- Only covers MCP-based tools
-- No access to agent internal state
-- Requires network configuration
-- Adds network hop latency
+- You control the network between agent and tools
+- Protocol adoption (e.g., MCP) is high in your environment
+- Minimal agent modification is required
+- Self-hosted or cloud-hosted agents on your infrastructure
+
+## When Not to Use
+
+- Agent uses non-protocol tools (raw HTTP, direct database connections)
+- Rich reasoning context is essential for policy decisions
+- Agent runs on third-party infrastructure you do not control
