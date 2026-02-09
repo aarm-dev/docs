@@ -97,7 +97,8 @@
               "patterns/mcp-gateway",
               "patterns/approval-flows",
               "patterns/deferral-flows",
-              "patterns/receipt-signing"
+              "patterns/receipt-signing",
+              "patterns/otel-ingestion"
             ]
           }
         ]

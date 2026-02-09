@@ -341,6 +341,14 @@ telemetry:
 
 ---
 
+## Ingestion via OpenTelemetry
+
+While this page covers exporting AARM events to external platforms, AARM can also **ingest** telemetry from agents that already emit OpenTelemetry data. Agent platforms like Claude Code natively export OTLP logs containing tool invocations, approval decisions, and session context.
+
+See the [OpenTelemetry Ingestion](/patterns/otel-ingestion) pattern for details on receiving OTLP data as input to AARM's Action Mediation Layer.
+
+---
+
 ## Next Steps
 
 <CardGroup cols={2}>
@@ -349,5 +357,8 @@ telemetry:
   </Card>
   <Card title="Conformance Requirements" icon="clipboard-check" href="/conformance/requirements">
     R9: Telemetry export requirements
+  </Card>
+  <Card title="OpenTelemetry Ingestion" icon="arrow-right-to-bracket" href="/patterns/otel-ingestion">
+    Ingest agent OTLP data as AARM input
   </Card>
 </CardGroup>
