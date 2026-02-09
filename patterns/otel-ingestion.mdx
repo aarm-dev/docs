@@ -1,0 +1,181 @@
+---
+title: "OpenTelemetry Ingestion"
+description: "Ingest agent telemetry via OpenTelemetry Protocol (OTLP) as a native input source for AARM."
+---
+
+## Overview
+
+Many AI agent platforms already emit structured telemetry via [OpenTelemetry](https://opentelemetry.io/) (OTEL). Rather than requiring agents to integrate an AARM-specific SDK, implementations can ingest existing OTLP data and transform it into AARM event types.
+
+This pattern complements AARM's Telemetry Exporter (which handles _output_ to SIEMs) by defining how to _receive_ agent telemetry as input.
+
+---
+
+## When to Use
+
+| Scenario | Fit |
+|----------|-----|
+| Agent platform emits OTLP logs/traces | Strong — direct ingestion |
+| Agent has no telemetry but supports MCP | Use [MCP Gateway](/patterns/mcp-gateway) instead |
+| You need inline enforcement | Combine with SDK or Gateway pattern |
+| You only need observational monitoring | This pattern alone is sufficient |
+
+<Note>
+This is an **observational** pattern. It enables detection and alerting but not inline enforcement. For blocking capabilities, combine with the [MCP Gateway](/patterns/mcp-gateway) or SDK architecture.
+</Note>
+
+---
+
+## Architecture
+
+```
+┌──────────────┐     OTLP gRPC/HTTP      ┌─────────────────┐
+│  AI Agent    │ ────────────────────────► │  AARM Receiver  │
+│ (Claude Code,│   Logs, Metrics, Traces  │  (OTLP Endpoint)│
+│  Copilot,    │                          └────────┬────────┘
+│  custom)     │                                   │
+└──────────────┘                          ┌────────▼────────┐
+                                          │  Action Parser  │
+                                          │  • Tool events  │
+                                          │  • Meta-tool    │
+                                          │    unwrapping   │
+                                          │  • HITL signals │
+                                          └────────┬────────┘
+                                                   │
+                                          ┌────────▼────────┐
+                                          │ Policy Engine   │
+                                          │ (OPA / custom)  │
+                                          └────────┬────────┘
+                                                   │
+                                     ┌─────────────┼─────────────┐
+                                     ▼             ▼             ▼
+                              ┌──────────┐  ┌──────────┐  ┌──────────┐
+                              │ Storage  │  │ Alerting │  │ Telemetry│
+                              │(ClickHouse│  │(Slack,   │  │ Exporter │
+                              │ Elastic) │  │ PagerDuty│  │(SIEM)    │
+                              └──────────┘  └──────────┘  └──────────┘
+```
+
+---
+
+## OTLP-to-AARM Event Mapping
+
+### Tool Invocation → Action Event
+
+OTLP log records from agent platforms typically contain tool invocation data. Map these to `aarm.action` events:
+
+| OTLP Attribute | AARM Field | Notes |
+|----------------|------------|-------|
+| `tool_name` or `tool.name` | `action.tool` | May require meta-tool resolution (see below) |
+| `tool_parameters` | `action.parameters_hash` | Hash for security; raw for analysis |
+| `event.name` | Used for filtering | `tool_result`, `tool_use` indicate tool events |
+| `session.id` | `session_id` | Correlation key for context accumulation |
+| `source` | `decision.result` | Maps HITL approval status (see below) |
+| `service.name` | `identity.service` | Agent platform identifier |
+
+### HITL Approval → Decision Context
+
+Some agent platforms include human-in-the-loop approval status directly in telemetry. For example, Claude Code includes a `source` attribute:
+
+| `source` Value | AARM Interpretation |
+|---------------|---------------------|
+| `user_permanent` | User approved and added to allowlist |
+| `user_temporary` | User approved for this invocation only |
+| `user_reject` | User denied the tool call |
+| `user_abort` | User cancelled the operation |
+| _(empty/absent)_ | Tool ran without human approval prompt |
+
+This data can populate both `aarm.action` events (with `decision.result` derived from the source) and `aarm.approval` events (with response timing derived from event timestamps).
+
+<Note>
+HITL approval data in telemetry means an AARM implementation doesn't always need a separate Approval Service — the approval decisions may already be captured in the agent's own telemetry stream.
+</Note>
+
+---
+
+## Meta-Tool Resolution
+
+### The Problem
+
+Agent platforms frequently use **meta-tools** — wrapper invocations where the actual tool identity is embedded in the parameters rather than the tool name. Without resolution, policies cannot distinguish between different tools.
+
+### Examples
+
+**Skill meta-tool** (Claude Code):
+```json
+{
+  "tool_name": "Skill",
+  "tool_parameters": "{\"skill\": \"superpowers:brainstorming\"}"
+}
+```
+The declared tool is `Skill`, but the actual tool is `superpowers:brainstorming`.
+
+**MCP meta-tool** (Claude Code):
+```json
+{
+  "tool_name": "mcp_tool",
+  "tool_parameters": "{\"mcp_server_name\": \"linear-server\", \"mcp_tool_name\": \"list_issues\"}"
+}
+```
+The declared tool is `mcp_tool`, but the actual tool is `linear-server.list_issues`.
+
+### Resolution Requirement
+
+AARM implementations receiving OTLP data MUST:
+
+1. **Detect meta-tools** by matching `tool_name` against known wrapper patterns
+2. **Extract the actual tool identity** from `tool_parameters` JSON
+3. **Rewrite the action** to reference the resolved tool, not the wrapper
+4. **Preserve the original** tool name for audit purposes
+
+The Action Mediation Layer's normalization step should include meta-tool resolution before policy evaluation.
+
+---
+
+## Domain-Specific Drift Profiles
+
+The [Context Accumulator](/components/context-accumulator) uses semantic distance to detect intent drift. However, the appropriate threshold varies significantly by agent domain:
+
+| Agent Type | Expected Semantic Range | Recommended Threshold |
+|------------|------------------------|----------------------|
+| Customer service | Narrow (stays on topic) | 0.6 - 0.7 |
+| **Coding assistant** | **Very wide** (reads, writes, tests, deploys) | **0.85 - 0.95** |
+| Data analyst | Moderate (query → visualize → report) | 0.7 - 0.8 |
+| Research agent | Wide (search → read → synthesize) | 0.8 - 0.9 |
+
+A coding agent asked to "refactor the auth module" will legitimately read files, run tests, modify imports, edit configs, and execute shell commands — all semantically distant from "refactor auth" but entirely appropriate. The 0.7 default threshold would generate constant false positives.
+
+Implementations SHOULD support configurable drift profiles per agent type or deployment context.
+
+---
+
+## Standards Convergence
+
+This pattern sits at the intersection of three emerging standards:
+
+| Standard | Focus | Overlap with AARM |
+|----------|-------|-------------------|
+| [OpenTelemetry GenAI SIG](https://opentelemetry.io/docs/specs/semconv/gen-ai/) | Agent observability (performance, debugging) | Telemetry format and semantic conventions |
+| [OCSF](https://schema.ocsf.io/) | Cybersecurity event schema | Output format for SIEM integration |
+| [OWASP AOS](https://aos.owasp.org/) | Agent observability + security bridge | Maps OTEL traces to OCSF security events |
+
+An AARM implementation can **ingest** via OTLP (this pattern), **evaluate** with its Policy Engine, and **export** in OCSF format (via the Telemetry Exporter) — bridging the observability and security domains.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Telemetry Exporter" icon="share-nodes" href="/components/telemetry">
+    Export AARM events to SIEM platforms
+  </Card>
+  <Card title="MCP Gateway" icon="shield-halved" href="/patterns/mcp-gateway">
+    Add inline enforcement for MCP tools
+  </Card>
+  <Card title="Action Mediation" icon="arrows-split-up-and-left" href="/components/action-mediation">
+    Normalize and classify agent actions
+  </Card>
+  <Card title="Context Accumulator" icon="layer-group" href="/components/context-accumulator">
+    Track session context and detect drift
+  </Card>
+</CardGroup>
