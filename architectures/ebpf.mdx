@@ -1,76 +1,81 @@
 ---
-title: Kernel / eBPF
-description: OS-level interception using eBPF and LSM hooks.
+title: "Architecture C: Kernel / eBPF"
+sidebarTitle: Kernel / eBPF
+description: "Kernel-level monitoring with maximum bypass resistance — deployed as a defense-in-depth backstop."
 ---
 
-## Overview
+## Description
 
-The eBPF architecture intercepts syscalls at the kernel level:
+AARM operates at the OS level using eBPF (Extended Berkeley Packet Filter) and LSM (Linux Security Modules) hooks to intercept system calls made by agent processes. This provides visibility into all I/O operations regardless of how the agent invokes them.
+
 ```
-┌─────────────────────────────┐
-│  Agent Process (User Space) │
-└─────────────┬───────────────┘
-              │ syscall
-┌─────────────▼───────────────┐
-│  AARM eBPF Hooks (Kernel)   │
-└─────────────┬───────────────┘
-              │ allow/deny
-┌─────────────▼───────────────┐
-│  System Calls               │
-│  (network, file, process)   │
-└─────────────────────────────┘
+┌──────────────────────────┐
+│  Agent Process           │
+│  (User Space)            │
+└────────────┬─────────────┘
+             │ syscall
+             ▼
+┌──────────────────────────┐
+│  AARM eBPF Hooks         │
+│  (Kernel Space)          │
+└────────────┬─────────────┘
+             │ allow/deny
+             ▼
+┌──────────────────────────┐
+│  System Calls            │
+│  (Network, File, Process)│
+└──────────────────────────┘
 ```
+
+This follows the host-based security pattern of Falco, Sysdig, and Cilium: kernel-level observation that cannot be bypassed by user-space code.
 
 ---
 
-## Properties
+## Conformance Limitation
+
+<Warning>
+  **Kernel-level (eBPF/LSM) implementations alone cannot satisfy AARM conformance** for context-dependent allow, deny, or defer classifications. These require semantic understanding of actions and accumulated session context — information fundamentally unavailable at the syscall level.
+
+  An eBPF-only deployment can enforce **forbidden actions** (static rules on IPs, file paths, syscalls) but **cannot** evaluate intent alignment, compositional violations, or context sufficiency.
+
+  eBPF implementations SHOULD be positioned as **defense-in-depth backstop layers** alongside semantic-aware architectures (Gateway, SDK, or Vendor Integration). Vendors must not claim AARM compliance based solely on kernel-level monitoring.
+</Warning>
+
+---
+
+## Trust Properties
 
 | Property | Value |
 |----------|-------|
-| Enforcement point | Kernel |
-| Bypass resistance | Very High |
-| Semantic visibility | Low (syscalls only) |
-| Integration effort | None |
-| Context access | None (process-level only) |
+| **Enforcement point** | Kernel level — all syscalls pass through eBPF hooks |
+| **Bypass risk** | Lowest of any architecture — requires kernel exploit to evade |
+| **Semantic visibility** | Limited — sees `connect()`, `write()`, `open()`, not "send email" |
+| **Context access** | None — no visibility into agent reasoning, user request, or session |
 
 ---
 
-## Implementation
-```c
-SEC("lsm/socket_connect")
-int aarm_socket_connect(struct socket *sock, 
-                        struct sockaddr *address) {
-    u32 pid = bpf_get_current_pid_tgid() >> 32;
-    
-    if (!is_monitored_process(pid))
-        return 0;
-    
-    struct sockaddr_in *addr = (struct sockaddr_in *)address;
-    u32 dest_ip = addr->sin_addr.s_addr;
-    
-    if (!is_allowed_destination(pid, dest_ip)) {
-        emit_blocked_event(pid, dest_ip);
-        return -EPERM;
-    }
-    
-    return 0;
-}
-```
+## Action Classification Support
+
+| Classification | Support | Notes |
+|---------------|---------|-------|
+| Forbidden | ✅ Strong | Block malicious IPs, sensitive file paths, dangerous syscalls |
+| Context-Dependent Deny | ⚠️ Weak | Cannot correlate with application context without external integration |
+| Context-Dependent Allow | ❌ Not feasible | Intent alignment requires semantic understanding |
+| Context-Dependent Defer | ⚠️ Limited | Can flag for deferment but cannot resolve — requires higher-level layers |
 
 ---
 
-## Use Cases
+## When to Use
 
-- Maximum security environments
-- Unmodifiable agent code
-- Backstop detection layer
-- Compliance audit trail
+- Maximum bypass resistance is required
+- Agent code cannot be modified
+- Comprehensive syscall visibility needed for compliance
+- Forbidden action enforcement is the primary concern
+- **As a backstop layer alongside other architectures**
 
----
+## When Not to Use
 
-## Limitations
-
-- Limited semantic visibility
-- Cannot see encrypted payloads
-- Requires syscall-to-action mapping
-- Linux kernel 4.18+ required
+- Context-dependent evaluation is critical (use Gateway or SDK as primary)
+- Intent drift detection is a priority
+- Agent runs on infrastructure you do not control (SaaS)
+- Windows environments (eBPF not available without WSL2)
