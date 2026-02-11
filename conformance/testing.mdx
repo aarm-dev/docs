@@ -1,0 +1,90 @@
+---
+title: Conformance Testing
+sidebarTitle: Testing
+description: "How to verify an AARM implementation satisfies conformance requirements."
+---
+
+## Testing Approach
+
+Each conformance requirement (R1–R9) includes a **Verification** section describing the minimum test to confirm compliance. This page provides a structured testing protocol.
+
+---
+
+## Test Matrix
+
+| Req | Test | Expected Result | Level |
+|-----|------|-----------------|-------|
+| R1 | Submit action matching DENY policy | Action does not execute; denial receipt generated | MUST |
+| R1 | Submit action matching DEFER condition | Action suspended; no effects; deferral receipt generated | MUST |
+| R1 | Make AARM system unavailable, submit action | Action fails (no fail-open bypass) | MUST |
+| R2 | Execute action sequence, inspect context at step N | Policy engine receives all prior actions and data classifications | MUST |
+| R2 | Tamper with prior context entry (if hash-chained) | Tampering detected | SHOULD |
+| R3 | Submit forbidden action | Immediate DENY regardless of context | MUST |
+| R3 | Submit allowed action after sensitive data access (context-dependent deny) | DENY based on context | MUST |
+| R3 | Submit denied action with confirming context (context-dependent allow) | STEP_UP or ALLOW | MUST |
+| R3 | Submit action with ambiguous/conflicting context (context-dependent defer) | DEFER | MUST |
+| R4 | Trigger each of 5 decision types | Correct enforcement: ALLOW executes, DENY blocks, MODIFY transforms, STEP_UP pauses, DEFER suspends | MUST |
+| R4 | STEP_UP with no response within timeout | DENY after timeout | MUST |
+| R4 | DEFER with no resolution within timeout | DENY after timeout | MUST |
+| R5 | Generate receipts for ALLOW, DENY, MODIFY, STEP_UP, DEFER | All fields present per schema | MUST |
+| R5 | Verify receipt signature offline | Signature validates | MUST |
+| R5 | Verify deferred action receipt | Deferral reason, resolution method, resolution timestamp present | MUST |
+| R6 | Submit from different principals and sessions | Receipts correctly attribute identity including role/privilege scope | MUST |
+| R6 | Defer action, then resolve | Original identity preserved in resolution receipt | MUST |
+| R7 | Execute diverging action sequence exceeding drift threshold | Alert, deferral, or escalation triggered | SHOULD |
+| R8 | Configure SIEM export | Events appear with correct schema including DEFER events | SHOULD |
+| R9 | Submit read operation | Issued credential cannot perform writes | SHOULD |
+
+---
+
+## Testing Workflow
+
+<Steps>
+  <Step title="Environment Setup">
+    Deploy AARM system under test with a test policy set covering all four action classifications. Configure mock tools that report execution/non-execution.
+  </Step>
+  <Step title="Core Tests (R1–R6)">
+    Execute all MUST tests. Every test must pass for AARM Core conformance.
+  </Step>
+  <Step title="Extended Tests (R7–R9)">
+    Execute SHOULD tests. All must pass for AARM Extended conformance.
+  </Step>
+  <Step title="Report">
+    Document results per requirement. Partial conformance must specify which requirements are satisfied.
+  </Step>
+</Steps>
+
+---
+
+## Test Policy Set
+
+A reference test policy set covering all classifications:
+
+```yaml
+# Forbidden: always deny
+- id: test-forbidden
+  match: { tool: "database", operation: "drop_table" }
+  decision: DENY
+  classification: forbidden
+
+# Context-Dependent Deny: allow email, deny after PII access
+- id: test-ctx-deny
+  match: { tool: "email", operation: "send" }
+  condition: context.data_classifications contains "PII"
+  decision: DENY
+  classification: context_dependent_deny
+
+# Context-Dependent Allow: deny delete, allow with explicit user request
+- id: test-ctx-allow
+  match: { tool: "database", operation: "delete" }
+  condition: context.original_request matches "delete my test data"
+  decision: STEP_UP
+  classification: context_dependent_allow
+
+# Context-Dependent Defer: high-impact with low confidence
+- id: test-ctx-defer
+  match: { tool: "credentials", operation: "rotate" }
+  condition: context.confidence < 0.5
+  decision: DEFER
+  classification: context_dependent_defer
+```
