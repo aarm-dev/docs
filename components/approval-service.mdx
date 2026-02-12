@@ -12,6 +12,8 @@ The Approval Service implements step-up authorization for actions that require h
 
 In both cases, the action is **blocked from executing** until a human decision is received or a timeout fires.
 
+To prevent approval fatigue, the system utilizes risk levels to ensure only high-impact or genuinely ambiguous actions are routed for human review.
+
 <Warning>
   The Approval Service must present **full action context** to approvers — not just the action itself. Approvers who see only "Agent wants to send an email" cannot make informed decisions. Approvers who see the original user request, prior actions, data classifications accessed, and semantic distance score can.
 </Warning>
@@ -32,6 +34,7 @@ Approval Service receives request with full context
 │  • Prior actions in session                    │
 │  • Data classifications accessed               │
 │  • Semantic distance from original intent      │
+│  • Risk level identified                       │
 │  • Identity: human principal + service + agent │
 │  • Why approval is needed (policy matched)     │
 └────────────────────────────────────────────────┘
@@ -60,6 +63,8 @@ class ApprovalRequest:
     context: SessionContext         # Full accumulated context
     identity: ActionIdentity       # Human + service + agent + role/privilege scope
     approvers: list[str]
+    risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    confidence: float              # Policy confidence 0.0 to 1.0
     timeout: int                   # seconds
     reason: str                    # Why approval is needed (policy matched)
     source: Literal["step_up", "defer_escalation"]
@@ -166,6 +171,8 @@ Effective approval decisions require presenting the right information. The Appro
 | **Prior actions** | What the agent already did in this session |
 | **Data classifications** | Did the agent access PII, CONFIDENTIAL, or other sensitive data? |
 | **Semantic distance** | How far has the agent drifted from the original request? |
+| **Risk level** | The potential impact or blast radius of the action (e.g., CRITICAL for production DB deletes). |
+| **Policy Confidence** | How certain the Policy Engine is that this action matches a specific rule or intent. |
 | **Identity chain** | Human principal → service account → agent session → role/privilege scope |
 | **Policy matched** | Which rule triggered this approval and why |
 | **Source** | Is this a direct STEP_UP or an escalated DEFER? |
@@ -202,6 +209,8 @@ class SlackNotifier:
                 f"*Original request:* {request.context.original_request[:200]}",
                 f"*Prior actions:* {len(request.context.prior_actions)} in session",
                 f"*Data accessed:* {', '.join(request.context.data_classifications) or 'None flagged'}",
+                f"*Risk Level:* `{request.risk_level}`",
+                f"*Policy Confidence:* {conf_color} {request.policy_confidence * 100:.0f}%",
                 f"*Reason:* {request.reason}",
                 drift_warning
             ])}},
@@ -310,6 +319,9 @@ When a deferred action escalates, the Approval Service receives the accumulated 
 | Record approver identity and decision in receipt | MUST | Including timestamp and reason (R5) |
 | Preserve original identity context across deferral/approval | MUST | Re-validate before executing if claims may have expired (R6) |
 | Accept escalations from Deferral Service | MUST | DEFER → STEP_UP pathway |
+| Expose Risk Level | MUST | High-risk actions should be visually prioritized in UI/Slack. |
+| Expose Policy Confidence | SHOULD | Helps approvers understand if the system is "unsure" vs "highly certain." |
 | Support multiple notification channels | SHOULD | Slack, email, webhook, etc. |
 | Escalation on non-response | SHOULD | Route to backup approver after configurable window |
 | Visual distinction between STEP_UP and DEFER escalations | SHOULD | Approvers should know why they're being asked |
+

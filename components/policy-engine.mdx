@@ -16,23 +16,38 @@ The Policy Engine has two logical components:
 
 The PDP evaluates an action and returns a decision:
 ```python
+@dataclass
+class Decision:
+    result: str
+    policy_id: str
+    reason: str
+    risk_level: str  # Added from rule
+    confidence: float # Calculated during match
+    modifications: dict | None = None
+    approvers: list[str] | None = None
+
 class PolicyDecisionPoint:
     def __init__(self, policy_store: PolicyStore):
         self.policies = policy_store
     
     def evaluate(self, action: Action) -> Decision:
         for rule in self.policies.get_rules():
-            if self.matches(rule, action):
+            # Calculate match confidence (e.g., semantic similarity or regex strength)
+            match_score = self.calculate_confidence(rule, action)
+            
+            if match_score > rule.threshold:
                 return Decision(
                     result=rule.action,
                     policy_id=rule.id,
                     reason=rule.reason,
+                    risk_level=rule.risk_level, 
+                    confidence=match_score,
                     modifications=rule.modifications,
                     approvers=rule.approvers
                 )
         
         # Default allow if no rules match
-        return Decision(result="ALLOW")
+        return Decision(result="ALLOW", confidence=1.0, risk_level="LOW")
 ```
 
 ### Decision Types
@@ -90,6 +105,9 @@ rules:
       context:
         data_classification: PII
     action: DENY
+    risk_level: HIGH  # Quantifies the "danger" of the tool/data
+    threshold: 0.7    # Minimum confidence required to trigger this rule
+    approvers: ["data-privacy-team"]
     reason: "Cannot send PII externally"
 ```
 
@@ -147,3 +165,4 @@ Support hot-reload for policy updates without restart.
 | Parameter validation | MUST |
 | Context-aware matching | SHOULD |
 | Hot reload policies | SHOULD |
+
