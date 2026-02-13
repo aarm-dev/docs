@@ -15,6 +15,9 @@ The Receipt Generator creates a signed record for every action:
 ---
 
 ## Receipt Schema
+
+Receipts should bind action, requester context, policy version or hash, decision, and outcome in a single signed object.
+
 ```json
 {
   "receipt_id": "rct_3d4e5f6a",
@@ -26,17 +29,36 @@ The Receipt Generator creates a signed record for every action:
     "tool": "database",
     "operation": "query",
     "parameters": {"query": "SELECT * FROM users", "limit": 100},
-    "identity": {
+    "requester_context": {
       "human": "alice@company.com",
+      "agent": "agent-01",
       "service": "agent-svc",
-      "session": "sess_xyz"
+      "session": "sess_xyz",
+      "scope": "db:read",
+      "delegation_chain": [
+        {
+          "delegator": "alice@company.com",
+          "delegatee": "agent-01",
+          "scope": "db:read",
+          "issued_at": "2025-01-15T10:29:00Z",
+          "expires_at": "2025-01-15T11:29:00Z"
+        }
+      ]
     }
   },
   
   "decision": {
     "result": "ALLOW",
-    "policy_id": null,
-    "reason": null
+    "policy": {
+      "policy_id": "pol_42",
+      "version": "2026-02-10",
+      "hash": "sha256:3a7bd3e2360a..."
+    },
+    "reason": "Matched allowlist"
+  },
+
+  "context": {
+    "context_hash": "sha256:abc123..."
   },
   
   "approval": null,
@@ -155,5 +177,8 @@ CREATE TABLE receipts (
 | Receipt for every action | MUST |
 | Cryptographic signature | MUST |
 | Offline verification | MUST |
+| Bind requester context + delegation chain | MUST |
+| Bind policy version or hash | MUST |
 | Include full action + decision | MUST |
+| Context hash or log pointer | SHOULD |
 | Append-only storage | SHOULD |
