@@ -26,8 +26,9 @@ Each conformance requirement (R1–R9) includes a **Verification** section descr
 | R4 | Trigger each of 5 decision types | Correct enforcement: ALLOW executes, DENY blocks, MODIFY transforms, STEP_UP pauses, DEFER suspends | MUST |
 | R4 | STEP_UP with no response within timeout | DENY after timeout | MUST |
 | R4 | DEFER with no resolution within timeout | DENY after timeout | MUST |
-| R5 | Generate receipts for ALLOW, DENY, MODIFY, STEP_UP, DEFER | All fields present per schema | MUST |
+| R5 | Generate receipts for ALLOW, DENY, MODIFY, STEP_UP, DEFER | Requester context, delegation chain (if present), and policy version/hash present per schema | MUST |
 | R5 | Verify receipt signature offline | Signature validates | MUST |
+| R5 | Tamper with requester context or policy hash in receipt | Signature verification fails | MUST |
 | R5 | Verify deferred action receipt | Deferral reason, resolution method, resolution timestamp present | MUST |
 | R6 | Submit from different principals and sessions | Receipts correctly attribute identity including role/privilege scope | MUST |
 | R6 | Defer action, then resolve | Original identity preserved in resolution receipt | MUST |

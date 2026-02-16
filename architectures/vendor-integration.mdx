@@ -63,8 +63,8 @@ For Architecture D to function, vendors must provide:
 |-------------|---------|
 | **Pre-action hook** | Synchronous callback before each tool invocation with action details and context |
 | **Decision enforcement** | Block, modify, defer, or escalate based on extension response (ALLOW, DENY, MODIFY, STEP_UP, DEFER) |
-| **Context availability** | At minimum: tool, operation, parameters, user identity, session ID. Richer context enables stronger policies |
-| **Receipt export** | Export or receive action receipts for customer audit trails |
+| **Context availability** | At minimum: tool, operation, parameters, and requester context (human principal, agent/service identity, session, privilege scope). Delegation chain should be provided when applicable. Richer context enables stronger policies |
+| **Receipt export** | Export or receive action receipts for customer audit trails, including requester context and policy version/hash |
 | **Timeout handling** | Configurable behavior when policy service is unavailable. Fail closed (DENY) MUST be supported |
 
 ---
