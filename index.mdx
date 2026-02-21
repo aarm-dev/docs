@@ -113,23 +113,11 @@ A system conforming to AARM:
   </Step>
 </Steps>
 
-```
-┌─────────────────┐         ┌─────────────────────────────────┐         ┌─────────────────┐
-│                 │         │          AARM SYSTEM            │         │                 │
-│  Agent / LLM    │ ──────► │  ┌─────────────────────────┐   │ ──────► │  Tools / APIs   │
-│                 │  action │  │    Context Accumulator  │   │  allow  │                 │
-│                 │         │  └────────────┬────────────┘   │   or    │                 │
-│                 │ ◄────── │               ▼                │ ◄────── │                 │
-│                 │  result │  ┌─────────────────────────┐   │  result │                 │
-└─────────────────┘         │  │     Policy Engine +     │   │         └─────────────────┘
-                            │  │   Intent Evaluation     │   │
-                            │  └────────────┬────────────┘   │
-                            │               ▼                │
-                            │  ┌─────────────────────────┐   │
-                            │  │   Receipts (+ context)  │   │
-                            │  └─────────────────────────┘   │
-                            └─────────────────────────────────┘
-```
+<img 
+  src="/images/aarm-system-diagram.png"
+  alt="AARM System Architecture"
+  style={{ maxWidth: "100%", height: "auto" }}
+/>
 
 ---
 
