@@ -1,114 +1,248 @@
 ---
-title: Conformance Requirements
-description: What a system must do to be AARM-compliant.
+title: "Conformance Requirements"
+description: "What a system must do to be AARM-conformant."
 ---
 
 ## Conformance Levels
 
 | Level | Requirements |
-|-------|--------------|
-| **AARM Core** | R1–R5 (all MUST) |
-| **AARM Extended** | R1–R8 (all MUST + SHOULD) |
+| --- | --- |
+| **AARM Core** | R1–R6 (all MUST) |
+| **AARM Extended** | R1–R9 (all MUST + SHOULD) |
+
+Systems may claim partial conformance by specifying which requirements are satisfied, but only systems satisfying all MUST requirements may use the designation "AARM-conformant."
+
+---
+
+## Claiming Conformance
+
+AARM is an open specification maintained by a community that has invested significant effort in defining rigorous, vendor-neutral requirements for securing AI-driven actions at runtime. To protect the integrity of that work and ensure that "AARM-conformant" carries real meaning, we ask that organizations claiming conformance agree to the following.
+
+<Steps>
+  <Step title="Refer to your solution as an AARM system">
+    If your system is conformant, you agree to describe it publicly as an AARM system. You can give your product any commercial name you like. For example: "Acme Inc. built AIInspector, an AARM system." AARM is a specification, not a product, and the naming convention should reflect that.
+  </Step>
+  <Step title="Publish a dedicated conformance page">
+    Maintain a publicly accessible page explaining how your system satisfies each conformance requirement (R1 through R6 for Core, R1 through R9 for Extended). This page should map specific capabilities to specific requirements and note any limitations or areas of partial coverage.
+  </Step>
+  <Step title="Engage with the AARM community">
+    Be prepared to participate in the AARM Technical Working Group, conformance discussions, or related community activities. Claiming conformance is not a one-way assertion. It comes with an expectation of engagement with the community that maintains the specification. This ensures that conformance claims are grounded in real implementation experience, that feedback flows back into the specification, and that the broader ecosystem benefits.
+  </Step>
+  <Step title="Operate a production system with active customers">
+    Conformance claims should be backed by a working, production-deployed solution that is actively used by customers. AARM conformance describes the runtime behavior of a live system, not a design document or a roadmap.
+  </Step>
+  <Step title="Hold a recognized security certification">
+    The organization claiming conformance should hold at least one recognized security certification (e.g., SOC 2 Type II, ISO 27001, FedRAMP) relevant to the environment in which the AARM system operates. This establishes baseline organizational security maturity and provides independent assurance that the system is operated within a controlled security program.
+  </Step>
+  <Step title="Participate in future benchmarking">
+    AARM will publish comparable benchmarks to measure policy detection and enforcement metrics across conformant systems, giving buyers objective data to evaluate which tools are most effective for their needs. By claiming conformance, you agree to actively participate in those benchmarking efforts when they become available.
+  </Step>
+</Steps>
 
 ---
 
 ## Required (MUST)
 
-### R1: In-Line Authorization
+### R1: Pre-Execution Interception
 
-Block actions before execution based on policy.
-```
-✓ Denied actions do not execute
-✓ No effects on target systems
-✓ Denial recorded in receipt
-```
+The system MUST intercept actions before execution and be capable of blocking or deferring based on policy evaluation.
 
-### R2: Parameter Validation
-
-Validate parameters against constraints.
 ```
-✓ Type validation
-✓ Range/limit enforcement  
-✓ Allowlist/blocklist matching
-✓ Pattern validation
+✓ Actions matching DENY policies do not execute
+✓ No effects occur on target systems for denied or deferred actions
+✓ No fail-open mode that bypasses policy evaluation
+✓ Denial and deferral decisions recorded with the matching policy and reason
 ```
 
-### R3: Step-Up Authorization
+**Verification:** Configure a DENY policy, submit a matching action, verify the action does not execute and a denial receipt is generated. Configure a DEFER condition, verify the action is suspended without effects.
 
-Support human approval workflows.
-```
-✓ Execution blocks pending approval
-✓ Configurable approver routing
-✓ Timeout handling
-✓ Decision recorded in receipt
-```
+### R2: Context Accumulation
 
-### R4: Tamper-Evident Receipts
+The system MUST accumulate session context across actions within a session.
 
-Generate signed receipts for all actions.
 ```
-✓ Complete action representation
-✓ Requester context + delegation chain
-✓ Policy decision and reason
-✓ Policy version or hash
-✓ Cryptographic signature
-✓ Offline verification
+✓ Track prior actions executed in the session
+✓ Track data classifications accessed (via explicit labels, pattern detection, or policy-defined rules)
+✓ Default to highest sensitivity level when no classification mechanism produces a result
+✓ Maintain original user request (when available) for intent alignment
+✓ Make accumulated context available to policy evaluation
 ```
 
-### R5: Identity Binding
+The session context store SHOULD be implemented as an append-only, hash-chained log. Each context entry SHOULD include a cryptographic hash of the previous entry, forming a tamper-evident chain that detects retroactive modification.
 
-Bind actions to a non-forgeable requester context.
+**Verification:** Execute a sequence of actions, verify the policy engine receives accumulated context for each subsequent action. If hash-chaining is implemented, verify that tampering with a prior context entry is detectable.
+
+### R3: Policy Evaluation with Intent Alignment
+
+The system MUST evaluate actions against both static policy and contextual intent alignment.
+
 ```
-✓ Human principal
-✓ Agent/service identity
-✓ Session context
-✓ Privilege scope
-✓ Delegation chain (when applicable)
-✓ Integrity-protected requester context
+✓ Support action classification: forbidden, context-dependent deny, context-dependent allow, context-dependent defer
+✓ Evaluate forbidden actions against static policy with immediate denial
+✓ Evaluate context-dependent actions against accumulated session context
+✓ Defer actions when the policy engine cannot reach a confident decision
+✓ Support parameter validation: type, range, pattern, allowlist/blocklist
 ```
+
+Deferral MUST be triggered when:
+- A policy rule's match predicate references context fields not yet populated in the session
+- Multiple applicable policies produce conflicting decisions at the same priority level
+- A confidence score (if implemented) falls below a deployment-configured threshold
+
+The conditions triggering deferral MUST be documented and auditable.
+
+**Verification:** Configure policies for each classification type, verify correct evaluation behavior for each, including deferral for ambiguous context.
+
+### R4: Authorization Decisions
+
+The system MUST support five authorization decisions: ALLOW, DENY, MODIFY, STEP\_UP, and DEFER.
+
+| Decision | Behavior |
+| --- | --- |
+| **ALLOW** | Action proceeds unchanged |
+| **DENY** | Action blocked, no effects occur |
+| **MODIFY** | Action proceeds with transformed parameters |
+| **STEP\_UP** | Action paused pending human approval |
+| **DEFER** | Action temporarily suspended due to insufficient, ambiguous, or conflicting context |
+
+**STEP\_UP requirements:**
+
+```
+✓ Action execution blocks until approval decision is received
+✓ Approval requests routed to configured approvers
+✓ Configurable timeouts enforced (DENY on timeout recommended)
+✓ Full action context available to approvers
+```
+
+**DEFER requirements:**
+
+```
+✓ Execution paused until sufficient context is collected, additional validation performed, or safe constraints applied
+✓ Deferred actions tracked with execution order maintained relative to other operations
+✓ Deferred actions preserve security: no premature execution of high-risk operations
+✓ Configurable timeouts enforced; DENY on timeout is the default; fail-open on timeout is not permitted
+✓ Dependent actions (those relying on a deferred action's output) must also be deferred
+✓ Independent actions should proceed without blocking
+✓ Cascading deferrals bounded by a configurable limit; exceeding the limit results in DENY
+✓ Deferred actions recorded in receipts with deferral reason; resolution or timeout generates a follow-up receipt
+```
+
+**Verification:** Configure policies producing each decision type, verify correct enforcement behavior including deferral suspension and resolution.
+
+### R5: Tamper-Evident Receipts
+
+The system MUST generate cryptographically signed receipts for all actions.
+
+Receipts MUST contain:
+
+```
+✓ Action: tool, operation, parameters, timestamp
+✓ Context: session identifier, accumulated context at decision time
+✓ Identity: human principal, service identity, agent identity, role/privilege scope
+✓ Decision: result (ALLOW/DENY/MODIFY/STEP_UP/DEFER), policy matched, reason
+✓ Approval: if applicable, approver identity, decision, timestamp
+✓ Deferral: if applicable, deferral reason, resolution method, resolution timestamp
+✓ Outcome: execution result, error details if failed
+✓ Signature: cryptographic signature verifiable offline
+```
+
+Signature requirements:
+
+```
+✓ Secure algorithm (Ed25519, ECDSA P-256, or RSA-2048 minimum)
+✓ Sign canonical serialization of receipt contents
+✓ Public keys available for offline verification
+```
+
+**Verification:** Generate receipts for allowed, denied, deferred, and step-up actions. Verify all fields present and signature validates.
+
+### R6: Identity Binding
+
+The system MUST bind actions to identities at multiple levels:
+
+```
+✓ Human principal: the user on whose behalf the agent acts
+✓ Service identity: the service account executing the action
+✓ Agent identity: the specific agent instance
+✓ Session context: identifier linking related actions
+✓ Role and privilege scope: permissions associated with each identity at the time of action
+```
+
+Requirements:
+
+```
+✓ Identity captured at action submission time and preserved for deferred or delegated actions
+✓ Identity claims validated against trusted sources, including freshness and revocation status
+✓ Actions without verifiable identity denied or flagged
+✓ Identity information recorded in tamper-evident receipts for audit and forensic purposes
+```
+
+**Verification:** Submit actions from different principals and sessions, verify receipts correctly attribute each including role/privilege scope. Verify that identity is preserved across deferral and resolution.
 
 ---
 
 ## Recommended (SHOULD)
 
-### R6: Least Privilege
+### R7: Semantic Distance Tracking
 
-Support credential scoping.
-```
-○ Just-in-time issuance
-○ Operation-specific scoping
-○ Automatic rotation
-```
+The system SHOULD compute semantic distance between actions and stated intent to detect intent drift.
 
-### R7: Telemetry Export
+Given the original request *r₀* and the current action *aₙ*, semantic distance can be computed via embedding similarity:
 
-Export to security platforms.
 ```
-○ Real-time streaming
-○ Standard schemas (OCSF)
-○ Configurable filtering
+d(r₀, aₙ) = 1 − cosine(embed(r₀), embed(aₙ))
 ```
 
-### R8: Effect Capture
+Implementation considerations:
 
-Record downstream state changes.
 ```
-○ State hashes
-○ Resource identifiers
-○ Downstream correlation
+○ Embedding model should produce meaningful similarity scores between natural language requests and structured action descriptors
+○ Validate embedding model suitability through calibration against known-benign and known-malicious action sequences
+○ Track cumulative drift across action sequences, not only per-action
+○ Aggregation method (e.g., running maximum, exponential moving average) is implementation-defined but should be documented
+○ Drift thresholds are deployment-specific and should be calibrated empirically
+○ Trigger alerts, deferral, or escalation when drift exceeds configured thresholds
 ```
+
+**Verification:** Configure drift thresholds, execute diverging action sequences, verify escalation or deferral triggers. Verify that cumulative drift tracking detects gradual divergence across multi-step sequences, not only single-action anomalies.
+
+### R8: Telemetry Export
+
+The system SHOULD export structured telemetry to security platforms.
+
+```
+○ Real-time streaming within seconds of occurrence
+○ Standard schemas (OCSF, CEF, or documented custom)
+○ Configurable filtering by action type, decision (including DEFER), identity
+○ Batch export for historical analysis
+```
+
+**Verification:** Configure export to SIEM, verify events appear with correct schema including deferral events.
+
+### R9: Least Privilege Enforcement
+
+The system SHOULD support credential scoping for minimal permissions per action.
+
+```
+○ Just-in-time credential issuance with minimal validity period
+○ Operation-specific scoping (e.g., read-only for query operations)
+○ Credential usage logged for audit
+```
+
+**Verification:** Submit read operation, verify issued credential cannot perform writes.
 
 ---
 
 ## Summary Table
 
 | ID | Level | Requirement |
-|----|-------|-------------|
-| R1 | MUST | Block before execution |
-| R2 | MUST | Parameter validation |
-| R3 | MUST | Human approval workflows |
-| R4 | MUST | Signed receipts |
-| R5 | MUST | Identity binding |
-| R6 | SHOULD | Least privilege |
-| R7 | SHOULD | Telemetry export |
-| R8 | SHOULD | Effect capture |
+| --- | --- | --- |
+| R1 | MUST | Pre-execution interception: block or defer actions before execution |
+| R2 | MUST | Context accumulation: track prior actions, data classifications, original request |
+| R3 | MUST | Policy evaluation with intent alignment: forbidden, context-dependent deny/allow/defer |
+| R4 | MUST | Five authorization decisions: ALLOW, DENY, MODIFY, STEP\_UP, DEFER |
+| R5 | MUST | Tamper-evident receipts: cryptographically signed with full context |
+| R6 | MUST | Identity binding: human, service, agent, session, and role/privilege scope |
+| R7 | SHOULD | Semantic distance tracking: detect intent drift via embedding similarity |
+| R8 | SHOULD | Telemetry export: structured events to SIEM/SOAR platforms |
+| R9 | SHOULD | Least privilege enforcement: scoped, just-in-time credentials |
