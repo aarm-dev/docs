@@ -14,78 +14,160 @@ The Policy Engine has two logical components:
 
 ## Policy Decision Point
 
-The PDP evaluates an action and returns a decision:
+The PDP is the **decision function**: given the current action, accumulated session context, and the active policy set, it returns exactly one **decision** before any tool execution. Implementations may expose this as `PolicyDecisionPoint.evaluate` or inside a broader `PolicyEngine` API; the semantics below are normative for the PDP.
+
+### Inputs
+
+At evaluation time \(t\), the PDP consumes:
+
+| Input | Meaning |
+|-------|---------|
+| **Action** \(a_t\) | Canonical operation: tool, parameters, and metadata (from the [Action Mediation Layer](/components/action-mediation)). |
+| **Context** \(C_t\) | Session state: prior actions \(A_{1..t-1}\), data accessed so far \(D_t\), inferred user intent \(I_t\), and execution metadata \(M_t\) (timestamps, tool state, etc.). |
+| **Policy set** \(P\) | Active rules and configuration (versioned), including hard constraints and default posture when no rule matches. |
+
+Receipts and audit trails should record which policies applied, alignment or match scores, and a reference to the context snapshot used for the decision.
+
+### Decision categories
+
+These align with [action classification](/components/action-classification): the PDP operationalizes **Forbidden**, **context-dependent deny**, **context-dependent allow** (via `ALLOW` or `STEP_UP` depending on policy), and **context-dependent defer**. The concrete outputs are the decision types in the table below—not every category maps one-to-one to a single string, but every `Decision.result` must be explainable in these terms.
+
+### Core evaluation procedure
+
+Evaluation is **deterministic**: for identical \((a_t, C_t, P)\), the PDP MUST return the same decision. A typical decomposition (implementation detail may vary) is:
+
+1. **Forbidden / hard constraints** — If the action violates an absolute rule (or organizational deny list), return `DENY` immediately. No contextual override applies.
+2. **Compositional risk** — If sequence- or session-level risk exceeds a configured threshold \(\rho\), return `DENY` (see [Compositional risk](#compositional-risk)).
+3. **Static policy resolution** — Evaluate configured rules (pattern match, thresholds, DSL, compiled graph, etc.) to obtain a baseline outcome: `ALLOW`, `DENY`, `MODIFY`, or a rule-selected `STEP_UP`. **`MODIFY`** is produced here when a rule dictates parameter or behavior changes before enforcement; the PEP applies edits—contextual alignment may still run on the **intent** of the action for safety.
+4. **Uncertainty** — If confidence in intent or context is too low, or signals conflict such that alignment-based overrides would be unreliable, return `DEFER` (see [Uncertainty](#uncertainty)). This step is ordered **before** applying alignment overrides in the sketch below so `STEP_UP` is not chosen on meaningless scores.
+5. **Contextual alignment** — Compare the action (and optionally context) to inferred intent \(I_t\); produce an alignment score in \([0, 1]\) with respect to a threshold \(\tau\).
+6. **Overrides** — Apply contextual rules on top of the baseline (examples in pseudocode).
+7. **Default** — If no rule matched during static resolution, `evaluate_static_policy` returns the configured **default posture** (often `ALLOW` with explicit policy id, or `DENY` in strict environments—this MUST be documented for the deployment).
+
+```python
+def evaluate_action(a_t, C_t, P) -> Decision:
+    if violates_forbidden(a_t, C_t, P):
+        return deny_forbidden(...)
+
+    if compositional_risk(C_t, a_t) > P.rho:
+        return deny_compositional(...)
+
+    baseline = evaluate_static_policy(a_t, C_t, P)  # ALLOW | DENY | MODIFY | STEP_UP
+
+    if uncertainty_high(a_t, C_t):
+        return Decision(result="DEFER", reason="insufficient confidence or conflicting context", ...)
+
+    alignment = compute_alignment(a_t, C_t.intent)
+
+    if baseline.result == "ALLOW" and alignment < P.tau:
+        return Decision(result="DENY", reason="context-dependent deny", ...)
+
+    if baseline.result == "DENY" and alignment >= P.tau:
+        # Context justifies escalation: human approval, not silent allow
+        return Decision(result="STEP_UP", approvers=P.context_approvers, ...)
+
+    return baseline
+```
+
+**STEP_UP vs ALLOW for “context-dependent allow”:** When static policy says `DENY` but context strongly supports the action, AARM typically returns **`STEP_UP`** so a human or break-glass process confirms—rather than silently **`ALLOW`**. A direct **`ALLOW`** without step-up appears when static policy already **`ALLOW`**s and alignment is sufficient, or when product policy explicitly maps a rule outcome to `ALLOW` after context checks.
+
+### Precedence
+
+When multiple principles could apply, the PDP enforces this order:
+
+1. Forbidden / hard **DENY**
+2. Compositional risk **DENY**
+3. **DEFER** when uncertainty makes safe override impossible (before trusting alignment scores)
+4. Context-dependent **DENY** (static **ALLOW** but misaligned with intent)
+5. Contextual escalation (**STEP_UP**) when static **DENY** is overridden by alignment
+6. Baseline static outcome (**ALLOW** / **DENY** / **MODIFY** / rule-driven **STEP_UP**) including configured default when no rule matches
+
+Safety-critical denies are never bypassed by lower layers.
+
+### Contextual alignment
+
+`compute_alignment(a_t, I_t)` measures consistency between the current action and inferred user intent. Implementations MAY use embeddings, symbolic checks, or hybrid methods. The threshold \(\tau\) is part of policy configuration.
+
+### Uncertainty
+
+When intent is unreliable, context signals conflict, or history is insufficient for a safe decision, the PDP returns **`DEFER`**. The [Deferral Service](/components/deferral-service) (or equivalent) holds the action until context is clarified—this is distinct from **`STEP_UP`**, which assumes the decision structure is known but requires human approval.
+
+### Compositional risk
+
+Session risk is **not** in general additive over actions: \( \text{risk}(C_t) \neq \sum_i \text{risk}(a_i) \). Implementations MAY use a sequence model over \(C_t \cup \{a_t\}\). If compositional risk exceeds \(\rho\), the PDP returns **`DENY`** even when each step in isolation might pass.
+
+### Default posture vs unavailable PDP
+
+These are different:
+
+- **Default when policies evaluated but no rule matches:** A configured default (e.g. allow vs deny) produced by static policy resolution when no rule matches.
+- **PDP or policy store unavailable:** Implementations SHOULD **fail closed** (deny or defer) and MUST NOT pass actions through unmediated—see gateway and conformance guidance.
+
+### Illustrative types
+
 ```python
 @dataclass
 class Decision:
-    result: str
+    result: str  # ALLOW | DENY | MODIFY | STEP_UP | DEFER
     policy_id: str
     reason: str
-    risk_level: str  # Added from rule
-    confidence: float # Calculated during match
+    risk_level: str
+    confidence: float
+    alignment: float | None = None
     modifications: dict | None = None
     approvers: list[str] | None = None
 
 class PolicyDecisionPoint:
     def __init__(self, policy_store: PolicyStore):
         self.policies = policy_store
-    
-    def evaluate(self, action: Action) -> Decision:
-        for rule in self.policies.get_rules():
-            # Calculate match confidence (e.g., semantic similarity or regex strength)
-            match_score = self.calculate_confidence(rule, action)
-            
-            if match_score > rule.threshold:
-                return Decision(
-                    result=rule.action,
-                    policy_id=rule.id,
-                    reason=rule.reason,
-                    risk_level=rule.risk_level, 
-                    confidence=match_score,
-                    modifications=rule.modifications,
-                    approvers=rule.approvers
-                )
-        
-        # Default allow if no rules match
-        return Decision(result="ALLOW", confidence=1.0, risk_level="LOW")
+
+    def evaluate(self, action: Action, context: Context) -> Decision:
+        return evaluate_action(action, context, self.policies.active_policy_set())
 ```
+
+Rule-matching implementations often loop rules with per-rule confidence and thresholds; that pattern is compatible with the pipeline above if **forbidden** and **compositional** checks run first, **uncertainty** is evaluated before alignment-based overrides, and the configured default applies only when no rule fires.
 
 ### Decision Types
 
-| Decision | Behavior |
-|----------|----------|
-| `ALLOW` | Forward action to tool |
-| `DENY` | Block action, return error |
-| `MODIFY` | Rewrite parameters, then forward |
-| `STEP_UP` | Require human approval |
+| Decision | PDP meaning | PEP behavior (downstream) |
+|----------|-------------|---------------------------|
+| `ALLOW` | Proceed without change | Forward action to tool |
+| `DENY` | Block | Return error; no execution |
+| `MODIFY` | Safe to run only with changes | Apply modifications, then forward |
+| `STEP_UP` | Approval required | Request approval; execute only if granted |
+| `DEFER` | Cannot decide yet | Suspend; deferral service resolves |
 
 ---
 
 ## Policy Enforcement Point
 
-The PEP implements the decision:
+The PEP **applies** a decision produced by the PDP. It does not re-evaluate policy; it routes to execution, modification, denial, approval, or deferral.
+
 ```python
 class PolicyEnforcementPoint:
     def enforce(self, action: Action, decision: Decision) -> Result:
         match decision.result:
             case "DENY":
                 raise PolicyDenied(decision.reason)
-            
+
+            case "DEFER":
+                return self.deferral_service.suspend(action, decision)
+
             case "MODIFY":
                 action.parameters = decision.apply_modifications(
                     action.parameters
                 )
                 return self.execute(action)
-            
+
             case "STEP_UP":
                 approval = self.approval_service.request(
-                    action, 
+                    action,
                     decision.approvers
                 )
                 if not approval.granted:
                     raise ApprovalDenied(approval.reason)
                 return self.execute(action)
-            
+
             case "ALLOW":
                 return self.execute(action)
 ```
@@ -161,8 +243,7 @@ Support hot-reload for policy updates without restart.
 | Requirement | Level |
 |-------------|-------|
 | Evaluate before execution | MUST |
-| Support ALLOW/DENY/MODIFY/STEP_UP | MUST |
+| Support ALLOW/DENY/MODIFY/STEP_UP/DEFER | MUST |
 | Parameter validation | MUST |
 | Context-aware matching | SHOULD |
 | Hot reload policies | SHOULD |
-
