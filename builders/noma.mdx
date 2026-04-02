@@ -1,0 +1,258 @@
+---
+title: "Noma Security"
+description: "AARM Core conformant runtime security platform for modern AI infrastructure."
+---
+
+import { Badge } from '/snippets/badge.mdx';
+
+<div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+  <img
+    src="https://mintcdn.com/aarm/hMVmR2ABdT4pjXdV/images/noma.security.png"
+    alt="Noma Security"
+    style={{ width: '64px', height: '64px', borderRadius: '10px', objectFit: 'contain', border: '1px solid var(--colors-border)' }}
+  />
+  <div style={{ flex: 1, minWidth: '200px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+      <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 500 }}>Noma Security</h1>
+      <span style={{ background: '#EAF3DE', color: '#3B6D11', fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', letterSpacing: '0.04em' }}>
+        AARM CONFORMANT — CORE
+      </span>
+    </div>
+    <p style={{ margin: 0, color: 'var(--colors-content-secondary)', fontSize: '14px' }}>
+      Autonomous runtime security for modern AI infrastructure · <a href="https://noma.security" target="_blank">noma.security ↗</a>
+    </p>
+  </div>
+</div>
+
+<Tabs>
+  <Tab title="Overview">
+
+<CardGroup cols={4}>
+  <Card>
+    **Status**
+    
+    Conformant
+  </Card>
+  <Card>
+    **Tier**
+    
+    Core (R1–R6)
+  </Card>
+  <Card>
+    **Verified**
+    
+    February 2025
+  </Card>
+  <Card>
+    **TWG member**
+    
+    Yes
+  </Card>
+</CardGroup>
+
+### Description
+
+Noma Security is a unified platform to secure and govern AI agents and autonomous systems. It delivers safety, security, and compliance controls at the runtime layer — evaluating and enforcing policy on every agent action before execution occurs. Noma was the first company to achieve AARM Core conformance, completing the full testing protocol against R1–R6 of the specification.
+
+### Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Runtime interception" icon="shield-check">
+    Pre-execution evaluation of every agent action before any side effect occurs.
+  </Card>
+  <Card title="Policy enforcement" icon="sliders">
+    Configurable ALLOW / BLOCK / DEFER rules mapped to organizational risk posture.
+  </Card>
+  <Card title="Context accumulation" icon="layer-group">
+    Session-scoped action history enabling multi-step intent reasoning across an agent session.
+  </Card>
+  <Card title="Audit logging" icon="scroll">
+    Immutable, tamper-evident record of all authorization decisions and outcomes.
+  </Card>
+  <Card title="MCP security" icon="plug">
+    Protocol-layer enforcement for Model Context Protocol connections and tool calls.
+  </Card>
+  <Card title="Agent governance" icon="sitemap">
+    Enterprise-wide visibility and control across multi-agent deployments and pipelines.
+  </Card>
+</CardGroup>
+
+  </Tab>
+
+  <Tab title="About">
+
+### Company
+
+Noma Security was founded to address the enforcement gap that exists between AI agents and the systems they interact with — a layer that traditional security tooling was never designed to protect. The platform is built for organizations deploying AI agents at scale in production environments where auditability, policy control, and runtime visibility are non-negotiable.
+
+### Use cases
+
+<AccordionGroup>
+  <Accordion title="Enterprise AI deployments">
+    Governance and control across agent fleets with full audit trails. Noma provides a centralized enforcement plane for organizations running multiple agent systems across teams and environments.
+  </Accordion>
+  <Accordion title="MCP environments">
+    Enforcement at the protocol layer for Model Context Protocol connections. Noma intercepts and evaluates tool calls before they reach connected services, applying policy before any data is accessed or modified.
+  </Accordion>
+  <Accordion title="Regulated industries">
+    Financial services, healthcare, and legal environments requiring action-level compliance controls. Noma's audit-ready decision records satisfy documentation requirements for regulated AI deployments.
+  </Accordion>
+  <Accordion title="Multi-agent pipelines">
+    Security controls for orchestration layers where one agent delegates actions to another. Noma maintains policy enforcement across agent-to-agent handoffs.
+  </Accordion>
+</AccordionGroup>
+
+### Contact
+
+| | |
+|---|---|
+| Website | [noma.security ↗](https://noma.security) |
+| AARM contact | AARM TWG liaison |
+| Conformance report | [Download PDF ↗](#) |
+| GitHub | — |
+
+  </Tab>
+
+  <Tab title="Technical research">
+
+### Architecture
+
+Noma operates as an enforcement proxy between the agent runtime and downstream tool targets. Each action request is intercepted and evaluated against a policy engine before any side effect occurs. The system maintains session-scoped context to support multi-step reasoning about accumulated intent — satisfying the AARM R3 context accumulation requirement.
+
+The enforcement decision returns one of five outcomes defined in the AARM specification: `ALLOW`, `BLOCK`, `DEFER`, `REDACT`, or `ESCALATE`. All decisions are written to an immutable audit log before the action result is returned to the agent.
+
+### AARM requirement coverage
+
+#### Core requirements (R1–R6 MUST)
+
+| Requirement | Description | Status |
+|---|---|---|
+| R1 | Action interception before execution | ✅ Met |
+| R2 | Policy-based authorization decision | ✅ Met |
+| R3 | Context accumulation across session | ✅ Met |
+| R4 | Five authorization decisions (ALLOW / BLOCK / DEFER / REDACT / ESCALATE) | ✅ Met |
+| R5 | Immutable audit log | ✅ Met |
+| R6 | Dedicated AARM system designation and documentation | ✅ Met |
+
+#### Extended requirements (R7–R9 SHOULD)
+
+| Requirement | Description | Status |
+|---|---|---|
+| R7 | Semantic distance tracking | — Not verified |
+| R8 | Human escalation pathway | — Not verified |
+| R9 | Adversarial resistance | — Not verified |
+
+<Note>
+  Extended conformance verification is available on request. Contact [herman@aarm.dev](mailto:herman@aarm.dev) to initiate the extended testing protocol.
+</Note>
+
+### Publications & resources
+
+<CardGroup cols={2}>
+  <Card title="AARM Core conformance report" icon="file-pdf" href="#">
+    Full conformance evaluation report against R1–R6 of AARM v0.1, verified February 2025.
+  </Card>
+  <Card title="Technical architecture overview" icon="book-open" href="https://noma.security">
+    Noma's documentation covering the enforcement proxy architecture and integration patterns.
+  </Card>
+</CardGroup>
+
+  </Tab>
+
+  <Tab title="Conformance">
+
+<Note type="success">
+  **AARM Core conformant** — This system has completed the full AARM Core testing protocol and satisfies requirements R1–R6 of the AARM specification v0.1. Conformance was verified by the AARM specification author.
+</Note>
+
+### Conformance record
+
+| | |
+|---|---|
+| Specification version | AARM v0.1 |
+| Conformance tier | Core (R1–R6 MUST) |
+| Verified by | Herman Errico, AARM author |
+| Date | February 2025 |
+| Conformance report | [Download PDF ↗](#) |
+
+### Core requirements (R1–R6)
+
+<Steps>
+  <Step title="R1 — Action interception">
+    The system intercepts agent action requests before any side effect occurs. Noma operates as a proxy that receives every tool call prior to forwarding.
+  </Step>
+  <Step title="R2 — Policy-based authorization">
+    Each action is evaluated against a configurable policy set. The system returns an authorization decision before execution proceeds.
+  </Step>
+  <Step title="R3 — Context accumulation">
+    The system maintains session-scoped context across the full agent interaction. Prior actions are available to the policy engine when evaluating subsequent requests.
+  </Step>
+  <Step title="R4 — Five authorization decisions">
+    The system supports all five AARM authorization outcomes: ALLOW, BLOCK, DEFER, REDACT, and ESCALATE.
+  </Step>
+  <Step title="R5 — Immutable audit log">
+    All authorization decisions and their inputs are written to a tamper-evident log before the action result is returned to the agent.
+  </Step>
+  <Step title="R6 — AARM system designation">
+    Noma refers to its product as an AARM system, maintains a dedicated page explaining conformance, and has active production customers with verified security posture.
+  </Step>
+</Steps>
+
+### Extended conformance (R7–R9)
+
+Extended requirements are not yet verified for this system.
+
+| Requirement | Description | Status |
+|---|---|---|
+| R7 | Semantic distance tracking | Not verified |
+| R8 | Human escalation pathway | Not verified |
+| R9 | Adversarial resistance | Not verified |
+
+  </Tab>
+
+  <Tab title="Integration guide">
+
+### Deploying Noma as your AARM system
+
+Noma can be deployed as a conformant AARM enforcement layer for any agent stack. The integration sits between your agent runtime and downstream tools or APIs — no changes to agent code are required.
+
+<Steps>
+  <Step title="Route agent traffic through Noma">
+    Configure your agent framework to proxy tool calls through the Noma enforcement endpoint. Noma supports major agent frameworks and MCP-compatible runtimes.
+  </Step>
+  <Step title="Define your policy set">
+    Write ALLOW / BLOCK / DEFER rules that reflect your organization's risk posture and compliance requirements. Noma provides a policy editor and a library of baseline templates for common use cases.
+  </Step>
+  <Step title="Enable audit logging">
+    Connect your SIEM or log aggregator to receive the AARM-compliant audit stream. Noma emits structured decision records for every action evaluated.
+  </Step>
+  <Step title="Reference your AARM system">
+    Document Noma as your AARM system in security documentation, vendor attestations, and compliance evidence packages. The conformance report can be attached directly to audit artifacts.
+  </Step>
+</Steps>
+
+### Resources
+
+<CardGroup cols={2}>
+  <Card title="API documentation" icon="code" href="https://noma.security">
+    Integration guides, SDK references, and configuration documentation.
+  </Card>
+  <Card title="AARM conformance report" icon="file-pdf" href="#">
+    The formal conformance evaluation, suitable for audit and vendor review.
+  </Card>
+  <Card title="AARM conformance requirements" icon="list-check" href="/conformance/requirements">
+    Full specification of R1–R9 and what each requirement means in practice.
+  </Card>
+  <Card title="Contact Noma" icon="envelope" href="https://noma.security">
+    Reach out to discuss deployment, evaluation access, or enterprise pricing.
+  </Card>
+</CardGroup>
+
+  </Tab>
+</Tabs>
+
+---
+
+<Info>
+  This page is maintained by the AARM Technical Working Group. To report an inaccuracy or request an update, [open a GitHub issue](https://github.com/aarm-dev/docs/issues).
+</Info>
