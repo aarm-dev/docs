@@ -39,7 +39,6 @@
               "components/policy-engine",
               "components/approval-service",
               "components/action-classification",
-              "components/deferral-service",
               "components/receipts",
               "components/telemetry"
             ]
@@ -62,7 +61,7 @@
               "threats/prompt-injection",
               "threats/malicious-tool-outputs",
               "threats/confused-deputy",
-              "threats/over-privileged-credentials",
+              //"threats/over-privileged-credentials",
               "threats/data-exfiltration",
               "threats/goal-hijacking",
               "threats/intent-drift",
