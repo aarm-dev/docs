@@ -1,0 +1,205 @@
+---
+title: "Runlayer"
+description: "Enterprise control plane for MCP servers, skills, and agents"
+---
+
+<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+  <img
+    src="/images/runlayer.png"
+    alt="Runlayer"
+    style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid var(--colors-border)' }}
+  />
+  <span style={{
+    background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
+    color: '#2E7D32',
+    fontSize: '11px',
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: '20px',
+    letterSpacing: '0.05em',
+    border: '1px solid rgba(46, 125, 50, 0.15)',
+    boxShadow: '0 1px 3px rgba(46, 125, 50, 0.08)'
+  }}>
+    ✓ AARM CONFORMANT — CORE
+  </span>
+  <span style={{ color: 'var(--colors-content-secondary)', fontSize: '14px' }}>
+    MCP & AI agent security · <a href="https://runlayer.com" target="_blank">runlayer.com ↗</a>
+  </span>
+</div>
+
+<Tabs>
+  <Tab title="Overview">
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '2rem' }}>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Status</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4CAF50', display: 'inline-block', boxShadow: '0 0 6px rgba(76, 175, 80, 0.4)' }}></span>
+      <span style={{ fontSize: '15px', fontWeight: 600 }}>Conformant</span>
+    </div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Tier</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>Core (R1–R6)</div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Verified</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>April 2026</div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Builder Member</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>Yes</div>
+  </div>
+</div>
+
+### Description
+
+Runlayer is the enterprise control plane for MCP servers, skills, and agents. It gives organizations a single place to host, govern, and secure the AI tools their employees already rely on — across clients like Cursor, Claude Code, ChatGPT, VS Code, and any other MCP-compatible client — without forcing users to change their workflows.
+
+The platform combines a curated catalog of vetted MCP servers, skills, and agents with real-time threat detection, identity-aware access control, and full observability across every agent action. Runlayer integrates natively with identity providers like Okta and Entra, supports SSO and SCIM, and can be deployed in Runlayer's cloud or self-hosted behind a customer's VPC with zero data egress.
+
+Runlayer's relevance to AARM is direct: it operates at the exact chokepoint where agents call tools, which makes it a natural enforcement point for runtime authorization, context accumulation, and tamper-evident auditing of autonomous agent activity.
+
+### Platform capabilities
+
+<CardGroup cols={2}>
+  <Card title="MCP gateway" icon="shield-halved">
+    Proxies every tool call between AI clients and MCP servers, applying policies and security models in real time before requests reach downstream systems.
+  </Card>
+  <Card title="Shadow detection & enforcement" icon="desktop">
+    Endpoint-level visibility and enforcement on local machines via MDM, EDR, or client hooks — catching activity that bypasses the gateway path.
+  </Card>
+  <Card title="Threat detection models" icon="brain-circuit">
+    Purpose-built ML models trained on large corpora of MCP-specific attacks, covering tool calls, list operations, and full-session intent analysis.
+  </Card>
+  <Card title="Identity-aware access control" icon="fingerprint">
+    Deep integration with Okta, Entra, and other IdPs for SSO, SCIM, conditional access, and fine-grained attribute-based authorization.
+  </Card>
+  <Card title="Unified audit & observability" icon="list-check">
+    Tamper-evident logs of every agent action, tool call, and platform event — with full session reconstruction across clients and tools.
+  </Card>
+  <Card title="Human-in-the-loop approvals" icon="user-check">
+    Slack-based approval workflows for sensitive agent actions, scoped to the agent creator or designated approvers.
+  </Card>
+</CardGroup>
+
+### Integration coverage
+
+Runlayer is designed to sit in front of the AI tools enterprises already use, without changing developer workflows or requiring custom client builds.
+
+<AccordionGroup>
+  <Accordion title="AI clients">
+    Supports 300+ MCP-compatible clients including Cursor, VS Code, Claude Code, GitHub Copilot, ChatGPT, Claude Desktop, and Windsurf. Any client implementing MCP works out of the box.
+  </Accordion>
+  <Accordion title="MCP servers, skills, and agents">
+    Curated catalog covering 18,000+ MCP servers, skills, plugins, and agents. Internal APIs can be converted into MCP servers with the same access controls and observability as external ones.
+  </Accordion>
+  <Accordion title="Identity and security stack">
+    Native integration with Okta, Entra, and other major identity providers. Exports audit logs and telemetry to Splunk, Datadog, Honeycomb, Panther (via S3), CSV, and directly through MCP itself.
+  </Accordion>
+  <Accordion title="Deployment models">
+    Available as a managed cloud offering or self-hosted behind the customer's VPC with zero data egress.
+  </Accordion>
+</AccordionGroup>
+
+  </Tab>
+
+  <Tab title="Conformance">
+
+### Conformance record
+
+| | |
+|---|---|
+| Specification version | AARM v1.0 |
+| Status | Conformant |
+| Conformance tier | Core (R1–R6) |
+| Verified by | Herman Errico, AARM Technical Working Group |
+| Date | April 2026 |
+
+### Architecture
+
+Runlayer enforces AARM requirements through two complementary interception patterns. The first is a gateway pattern that sits between AI clients and MCP servers, proxying every tool call through a control plane where policies and security models evaluate the request before it reaches downstream systems. The second is a shadow pattern that extends visibility and enforcement to endpoints, so activity originating on local developer machines is also brought under the same policy surface.
+
+Context accumulation is handled through full session reconstruction across clients and tools, giving the platform end-to-end visibility into agent intent, reasoning, and actions — even though the underlying MCP protocol does not natively expose session identifiers. This accumulated context feeds into both deterministic policies (for example, identity-scoped allow/deny rules, attribute-based access, and restrictions on destructive tool classes) and non-deterministic security models that evaluate intent alignment across the full agent lifecycle.
+
+Authorization decisions, identity bindings, and policy evaluations are written to an append-only audit layer that records agent activity, user-initiated platform actions, and delegation events. Agents operate with their own distinct identities and act on behalf of the users that invoked them, making the full chain from human to agent to tool call traceable end to end.
+
+### AARM requirement coverage
+
+#### Core requirements (R1–R6 MUST)
+
+| Requirement | Description | Status |
+|---|---|---|
+| R1 | Pre-Execution Interception | ✅ Met |
+| R2 | Context Accumulation | ✅ Met |
+| R3 | Policy Evaluation with Intent Alignment | ✅ Met |
+| R4 | Five authorization decisions (ALLOW / DENY / MODIFY / STEP_UP) | ✅ Met |
+| R5 | Immutable audit log | ✅ Met |
+| R6 | Identity Binding | ✅ Met |
+
+#### Extended requirements (R7–R9 SHOULD)
+
+| Requirement | Description | Status |
+|---|---|---|
+| R7 | Semantic distance tracking | ✅ Met |
+| R8 | Telemetry Export | ✅ Met |
+| R9 | Least Privilege Enforcement | ✅ Met |
+
+  </Tab>
+
+  <Tab title="About">
+
+### Company
+
+Runlayer is building the trust layer between enterprises and their AI future — making MCP enterprise-ready so organizations can adopt AI agents across the business with complete observability and control. The company launched out of stealth in November 2025 with $11M in seed funding led by Khosla Ventures' Keith Rabois and Felicis.
+
+The founding team has built AI products at scale, including shipping Zapier's MCP, Agents, and AI Actions to millions of users. Runlayer works closely with David Soria Parra, the co-creator of the Model Context Protocol, who joined as an advisor and angel investor.
+
+Within four months of launching, Runlayer signed dozens of customers including eight unicorns and public companies such as Gusto, dbt Labs, Instacart, and Opendoor — reflecting the urgency enterprises feel around securing agent access to their most sensitive systems.
+
+### Key facts
+
+| | |
+|---|---|
+| Founded | 2025 |
+| Funding | $11M seed (Khosla Ventures, Felicis) |
+| Customers | Dozens of enterprises including Gusto, dbt Labs, Instacart, Opendoor |
+| Leadership | Andrew Berman (CEO), Tal Peretz, Vitor Balocco |
+| Deployment | Cloud or self-hosted (VPC) |
+
+### Contact
+
+| | |
+|---|---|
+| Website | [runlayer.com ↗](https://runlayer.com) |
+| LinkedIn | [linkedin.com/company/runlayer ↗](https://www.linkedin.com/company/runlayer/) |
+
+  </Tab>
+
+</Tabs>
+
+---
+
+<Info>
+  This page is maintained by the AARM Technical Working Group. To report an inaccuracy or request an update, [open a GitHub issue](https://github.com/aarm-dev/docs/issues).
+</Info>
