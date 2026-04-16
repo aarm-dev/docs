@@ -1,0 +1,24 @@
+---
+title: Side-Channel Leakage
+description: "Sensitive data leaks through logs, debug traces, or API metadata."
+---
+
+## Description
+
+Sensitive data may leak through channels outside the primary action path — verbose log outputs, debug traces, error messages containing data fragments, or metadata in external API calls. These leakage vectors bypass action-level policy enforcement because data exfiltration occurs as a side effect of permitted operations.
+
+This threat is distinct from data exfiltration: the agent is not manipulated into leaking data. Instead, the system's instrumentation inadvertently exposes data that the agent legitimately accessed.
+
+---
+
+## AARM Mitigation
+
+Output filtering policies can restrict what information flows into logs and external-facing outputs. Contextual sensitivity scoring propagates data classification from the context accumulator to auxiliary output channels.
+
+- **Output filtering** ensures that receipts, logs, and telemetry do not contain sensitive data from action parameters or tool responses
+- **Contextual sensitivity scoring** classifies data flowing through the action pipeline and applies redaction policies based on data classification
+- **Receipt generation** with configurable verbosity allows organizations to balance audit completeness against data exposure risk
+
+<Info>
+  Comprehensive side-channel prevention requires complementary infrastructure-level controls beyond AARM's action-level scope.
+</Info>

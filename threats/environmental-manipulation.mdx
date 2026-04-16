@@ -1,0 +1,24 @@
+---
+title: Environmental Manipulation
+description: "Adversaries alter system state to influence agent decisions."
+---
+
+## Description
+
+Adversaries may modify the environment in which the agent operates — altering files, API responses, configuration state, or database records — to influence agent decisions without directly injecting prompts. The agent processes manipulated environmental data as ground truth, leading to actions based on false premises.
+
+This threat exploits the gap between the agent's trust in its environment and the actual integrity of that environment. The manipulation may be subtle: a modified timestamp that changes policy evaluation, a DNS redirect that routes API calls to an attacker-controlled endpoint, or a configuration change that alters the agent's available tools.
+
+---
+
+## AARM Mitigation
+
+Input provenance tracking records the source and integrity of data the agent processes, enabling detection when environmental inputs deviate from expected baselines.
+
+- **Input provenance tracking** records the source and integrity of environmental inputs that influence action decisions
+- **Anomaly detection** flags unexpected changes in environmental state that correlate with changes in agent behavior
+- **Policy evaluation** considers environmental context as part of the action decision, enabling rules that account for environmental integrity
+
+<Info>
+  Environmental manipulation requires complementary infrastructure-level protections beyond AARM's action-level scope.
+</Info>

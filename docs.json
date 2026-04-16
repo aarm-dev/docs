@@ -62,6 +62,7 @@
               "threats/malicious-tool-outputs",
               "threats/confused-deputy",
               "threats/data-exfiltration",
+              "threats/over-privileged-credentials",
               "threats/goal-hijacking",
               "threats/intent-drift",
               "threats/memory-poisoning",
