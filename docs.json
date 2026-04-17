@@ -59,7 +59,7 @@
             "pages": [
               "threats/overview",
               "threats/prompt-injection",
-              "threats/malicious-tool-outputs",
+              "threats/malicious-tool-output",
               "threats/confused-deputy",
               "threats/data-exfiltration",
               "threats/goal-hijacking",
@@ -74,7 +74,8 @@
           {
             "group": "Related Research",
             "pages": [
-              "research/aligned"
+              "research/aligned",
+              "research/open-challenges"
             ]
           }
         ]
