@@ -169,8 +169,8 @@ The goal is not to build AARM, but to define what an AARM-conformant system must
 
 AARM is grounded in academic research on AI agent security:
 
-- **[Technical Paper](https://aarm.dev/research/technical-paper)** — Full specification with formal definitions and threat analysis
-- **[Research References](https://aarm.dev/research/references)** — Literature on agent security, prompt injection, and runtime protection
+- **[Research Hub](https://aarm.dev/research/aligned)** — Foundational paper and community research aligned with the specification
+- **[Open Challenges](https://aarm.dev/research/open-challenges)** — Unsolved problems in runtime action security
 
 ## Contributing
 
@@ -191,7 +191,7 @@ This specification is published under the MIT License. Reference implementations
 - 🔒 **[Threat Model](https://aarm.dev/threats/overview)**
 - 🏗️ **[System Architecture](https://aarm.dev/components/overview)**
 - 📚 **[Implementation Guides](https://aarm.dev/guides/quickstart)**
-- 📄 **[Research Paper](https://aarm.dev/research/technical-paper)**
+- 📄 **[Research Hub](https://aarm.dev/research/aligned)**
 
 ---
 
