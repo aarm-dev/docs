@@ -64,6 +64,7 @@
               "threats/confused-deputy",
               "threats/over-privileged-credentials",
               "threats/data-exfiltration",
+              "threats/over-privileged-credentials",
               "threats/goal-hijacking",
               "threats/intent-drift",
               "threats/memory-poisoning",
