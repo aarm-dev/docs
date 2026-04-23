@@ -112,15 +112,17 @@ To claim AARM compliance, a system must satisfy these nine requirements:
 
 | ID | Level | Requirement |
 |---|---|---|
-| **R1** | MUST | Block actions before execution based on policy |
-| **R2** | MUST | Validate action parameters against type, range, and pattern constraints |
-| **R3** | MUST | Accumulate session context including prior actions and data accessed |
-| **R4** | MUST | Evaluate intent consistency for context-dependent actions |
-| **R5** | MUST | Support human approval workflows with timeout handling |
-| **R6** | MUST | Generate cryptographically signed receipts with full context |
-| **R7** | MUST | Bind actions to human, service, agent, and session identity |
-| **R8** | SHOULD | Enforce least privilege through scoped, just-in-time credentials |
-| **R9** | SHOULD | Export structured telemetry to security platforms |
+| **R1** | MUST | Pre-execution interception: block or defer actions before execution |
+| **R2** | MUST | Context accumulation: track prior actions, data classifications, original request |
+| **R3** | MUST | Policy evaluation with intent alignment: forbidden, context-dependent deny/allow/defer |
+| **R4** | MUST | Five authorization decisions: ALLOW, DENY, MODIFY, STEP_UP, DEFER |
+| **R5** | MUST | Tamper-evident receipts: cryptographically signed with full context |
+| **R6** | MUST | Identity binding: human, service, agent, session, and role/privilege scope |
+| **R7** | SHOULD | Semantic distance tracking: detect intent drift via embedding similarity |
+| **R8** | SHOULD | Telemetry export: structured events to SIEM/SOAR platforms |
+| **R9** | SHOULD | Least privilege enforcement: scoped, just-in-time credentials |
+
+See the [full conformance requirements](https://aarm.dev/conformance/requirements) for detailed verification criteria.
 
 ## Threat Model
 
