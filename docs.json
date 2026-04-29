@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "AARM Specification v1.0",
+  "name": "AARM/CSA Specification v1.0",
   "colors": {
     "primary": "#0f172a",
     "light": "#07C983",
