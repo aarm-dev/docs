@@ -1,5 +1,5 @@
 ---
-title: Builders
+title: Builders Regitry
 description: Companies building AARM-conformant systems and those aligned with the AARM problem space.
 ---
 
@@ -8,11 +8,11 @@ description: Companies building AARM-conformant systems and those aligned with t
 | <span style={{ backgroundColor: "#22c55e", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>CONFORMANT</span> | Product satisfies AARM specification requirements | Complete [testing protocol](/conformance/testing), verify R1-R7 (Core) or R1-R9 (Extended) |
 | <span style={{ backgroundColor: "#3b82f6", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>ALIGNED</span> | Building in the same problem space | Working on runtime action security, self-declared |
 
+## Conformant Companies
+
 <Note>
   All new conformance reviews will be conducted via the AARM MCP server, request an Access Key to get started. [Start your review](https://aarm.dev/conformance/testing).
 </Note>
-
-## Conformant Companies
 
 <CardGroup cols={2}>
 <Card href="https://www.noma.security">
@@ -177,6 +177,10 @@ description: Companies building AARM-conformant systems and those aligned with t
 </CardGroup>
 
 ## Aligned Companies
+
+<Note>
+  To get listed as a aligned builder, simply submit a PR on Github. Add yourself at the end of the list. [List me](https://github.com/aarm-dev/docs/edit/main/builders.mdx).
+</Note>
 
 <CardGroup cols={2}>
   <Card href="https://www.mintmcp.com">
@@ -2416,29 +2420,13 @@ description: Companies building AARM-conformant systems and those aligned with t
 
 1. Satisfy all MUST requirements (R1-R7) as defined in the [Conformance Requirements](/conformance/requirements)
 2. Complete the [Testing Protocol](/conformance/testing) and provide evidence
-3. Submit verification results via [GitHub](https://github.com/aarm-spec/docs/issues)
+3. Wait 14 days for the conformance report if you passed the review
 
 ### AARM Aligned
 
 1. Your product addresses one or more aspects of the AI runtime security problem
 2. Submit a brief description of what you're building
 3. No conformance testing required
-
----
-
-## Submission Template
-```yaml
-company:
-  name: "Company Name"
-  logo: "URL or file path (square, min 200x200px)"
-  description: "What you're building (1-2 sentences)"
-  website: "https://yourcompany.com"
-  status: "conformant" | "aligned"
-  conformance_level: "core" | "extended"  # if conformant
-
-```
-
----
 
 ## Why Get Listed?
 
