@@ -3,10 +3,10 @@ title: Builders Registry
 description: Companies building AARM-conformant systems and those aligned with the AARM problem space.
 ---
 
-| Status | Meaning | Requirements |
-|--------|---------|--------------|
-| <span style={{ backgroundColor: "#22c55e", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>CONFORMANT</span> | Product satisfies AARM specification requirements | Complete [testing protocol](/conformance/testing), verify R1-R7 (Core) or R1-R9 (Extended) |
-| <span style={{ backgroundColor: "#3b82f6", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>ALIGNED</span> | Building in the same problem space | Working on runtime action security, self-declared |
+| Status | Meaning | How to Get Listed |
+|--------|---------|-------------------|
+| <span style={{ backgroundColor: "#22c55e", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>CONFORMANT</span> | Product satisfies AARM specification requirements | Complete the [testing protocol](/conformance/testing) and verify R1-R6 (Core) or R1-R9 (Extended) |
+| <span style={{ backgroundColor: "#3b82f6", color: "white", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "600" }}>ALIGNED</span> | Building in the same problem space | [Submit a PR on GitHub](https://github.com/aarm-dev/docs/edit/main/builders.mdx) to add your company |
 
 export const BUILDERS = [
   { name: "Noma Security", desc: "A unified platform to secure and govern your AI and agents, delivering enterprise-grade protection.", conformance: "Conformant", url: "https://www.noma.security" },
@@ -129,7 +129,7 @@ export const BuilderRegistry = () => {
           </button>
         ) : null}
       </div>
-      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", marginLeft: "1px"  }}>
+      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", paddingLeft: "6px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "auto" }}>
           <thead>
             <tr style={{ background: "rgba(0,0,0,0.02)" }}>
