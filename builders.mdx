@@ -160,15 +160,15 @@ export const BuilderRegistry = () => {
                   onClick={() => window.open(b.url, "_blank")}
                   style={{ cursor: "pointer", background: isConf ? "rgba(34,197,94,0.06)" : (i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)") }}
                 >
-                  <td style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <img
-                        src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
-                        alt=""
-                        width="20"
-                        height="20"
-                        style={{ borderRadius: "4px", flexShrink: 0 }}
-                      />
+                  <td style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9"}}>
+                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
+                     <img
+                     src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
+                     alt=""
+                     width="20"
+                     height="20"
+                     style={{ borderRadius: "4px", flexShrink: 0, minWidth: "20px" }}
+                    />
                       <span style={{ fontWeight: "600" }}>{b.name}</span>
                       <span style={{ color: "#cbd5e1", fontSize: "11px" }}>{"↗"}</span>
                     </div>
