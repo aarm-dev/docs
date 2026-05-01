@@ -85,7 +85,7 @@ export const BuilderRegistry = () => {
     if (sortField === field) { setSortDir(sortDir === "asc" ? "desc" : "asc"); }
     else { setSortField(field); setSortDir("asc"); }
   };
-const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
+  const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
   const confN = BUILDERS.filter((b) => b.conformance === "Conformant").length;
   const alignN = BUILDERS.length - confN;
   return (
@@ -130,16 +130,21 @@ const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " �
         ) : null}
       </div>
       <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px", tableLayout: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px" }}>
+          <colgroup>
+            <col style={{ width: "240px" }} />
+            <col style={{ width: "120px" }} />
+            <col />
+          </colgroup>
           <thead>
             <tr style={{ background: "rgba(0,0,0,0.02)" }}>
-              <th onClick={() => doSort("name")} style={{ padding: "10px 14px 10px 20px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              <th onClick={() => doSort("name")} style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                 Company<span style={{ color: sortField === "name" ? "#0ea5e9" : "#cbd5e1", fontSize: "10px" }}>{arrow("name")}</span>
               </th>
-              <th onClick={() => doSort("conformance")} style={{ padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: "110px" }}>
+              <th onClick={() => doSort("conformance")} style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                 Status<span style={{ color: sortField === "conformance" ? "#0ea5e9" : "#cbd5e1", fontSize: "10px" }}>{arrow("conformance")}</span>
               </th>
-              <th style={{ padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#475569", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Description
               </th>
             </tr>
@@ -147,7 +152,7 @@ const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " �
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={3} style={{ padding: "48px 14px", textAlign: "center", color: "#94a3b8" }}>
+                <td colSpan={3} style={{ padding: "48px 16px", textAlign: "center", color: "#94a3b8" }}>
                   No builders match your search.
                 </td>
               </tr>
@@ -160,7 +165,7 @@ const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " �
                   onClick={() => window.open(b.url, "_blank")}
                   style={{ cursor: "pointer", background: isConf ? "rgba(34,197,94,0.06)" : (i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)") }}
                 >
-                  <td style={{ padding: "8px 14px 8px 20px", borderBottom: "1px solid #f1f5f9", minWidth: "200px" }}>
+                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
                       <img
                         src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
@@ -171,12 +176,12 @@ const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " �
                       <span style={{ color: "#cbd5e1", fontSize: "11px" }}>{"↗"}</span>
                     </div>
                   </td>
-                  <td style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9" }}>
                     <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", letterSpacing: "0.03em", textTransform: "uppercase", color: "#fff", background: isConf ? "#22c55e" : "#3b82f6" }}>
                       {b.conformance}
                     </span>
                   </td>
-                  <td style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9", color: "#64748b", fontSize: "12px", lineHeight: "1.5" }}>
+                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9", color: "#64748b", fontSize: "12px", lineHeight: "1.5" }}>
                     {b.desc}
                   </td>
                 </tr>
