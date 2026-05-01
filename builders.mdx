@@ -85,7 +85,7 @@ export const BuilderRegistry = () => {
     if (sortField === field) { setSortDir(sortDir === "asc" ? "desc" : "asc"); }
     else { setSortField(field); setSortDir("asc"); }
   };
-  const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
+const arrow = (field) => sortField === field ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
   const confN = BUILDERS.filter((b) => b.conformance === "Conformant").length;
   const alignN = BUILDERS.length - confN;
   return (
@@ -129,11 +129,11 @@ export const BuilderRegistry = () => {
           </button>
         ) : null}
       </div>
-      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", paddingLeft: "6px" }}>
+      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "auto" }}>
           <thead>
             <tr style={{ background: "rgba(0,0,0,0.02)" }}>
-              <th onClick={() => doSort("name")} style={{ padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              <th onClick={() => doSort("name")} style={{ padding: "10px 14px 10px 20px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                 Company<span style={{ color: sortField === "name" ? "#0ea5e9" : "#cbd5e1", fontSize: "10px" }}>{arrow("name")}</span>
               </th>
               <th onClick={() => doSort("conformance")} style={{ padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: "110px" }}>
@@ -160,13 +160,13 @@ export const BuilderRegistry = () => {
                   onClick={() => window.open(b.url, "_blank")}
                   style={{ cursor: "pointer", background: isConf ? "rgba(34,197,94,0.06)" : (i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)") }}
                 >
-                  <td style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9",  minWidth: "200px" }}>
-                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
-                     <img
-                     src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
-                     alt=""
-                     style={{ borderRadius: "4px", flexShrink: 0, width: "20px", height: "20px", minWidth: "20px", maxWidth: "20px", display: "block" }}
-                    />
+                  <td style={{ padding: "8px 14px 8px 20px", borderBottom: "1px solid #f1f5f9", minWidth: "200px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
+                      <img
+                        src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
+                        alt=""
+                        style={{ borderRadius: "4px", flexShrink: 0, width: "20px", height: "20px", minWidth: "20px", maxWidth: "20px", display: "block" }}
+                      />
                       <span style={{ fontWeight: "600" }}>{b.name}</span>
                       <span style={{ color: "#cbd5e1", fontSize: "11px" }}>{"↗"}</span>
                     </div>
@@ -195,7 +195,6 @@ export const BuilderRegistry = () => {
 <BuilderRegistry />
 
 ---
-
 ## How to Get Listed
 
 ### AARM Conformant
