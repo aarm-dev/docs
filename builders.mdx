@@ -90,6 +90,26 @@ export const BuilderRegistry = () => {
   const alignN = BUILDERS.length - confN;
   return (
     <div className="not-prose" style={{ marginTop: "16px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+      <style>{`
+        .builders-table th,
+        .builders-table td {
+          padding: 12px 16px !important;
+        }
+        .builders-table thead th {
+          padding-top: 14px !important;
+          padding-bottom: 14px !important;
+        }
+        .builders-table th:first-child,
+        .builders-table td:first-child {
+          padding-left: 20px !important;
+          padding-right: 16px !important;
+        }
+        .builders-table th:last-child,
+        .builders-table td:last-child {
+          padding-left: 16px !important;
+          padding-right: 20px !important;
+        }
+      `}</style>
       <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "4px 12px", fontSize: "13px" }}>
           <strong style={{ color: "#16a34a" }}>{confN}</strong>{" "}
@@ -130,7 +150,7 @@ export const BuilderRegistry = () => {
         ) : null}
       </div>
       <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", width: "100%", boxSizing: "border-box" }}>
-        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px" }}>
+        <table className="builders-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px" }}>
           <colgroup>
             <col style={{ width: "30%" }} />
             <col style={{ width: "15%" }} />
@@ -138,13 +158,13 @@ export const BuilderRegistry = () => {
           </colgroup>
           <thead>
             <tr style={{ background: "rgba(0,0,0,0.02)" }}>
-              <th onClick={() => doSort("name")} style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              <th onClick={() => doSort("name")} style={{ textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                 Company<span style={{ color: sortField === "name" ? "#0ea5e9" : "#cbd5e1", fontSize: "10px" }}>{arrow("name")}</span>
               </th>
-              <th onClick={() => doSort("conformance")} style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              <th onClick={() => doSort("conformance")} style={{ textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                 Status<span style={{ color: sortField === "conformance" ? "#0ea5e9" : "#cbd5e1", fontSize: "10px" }}>{arrow("conformance")}</span>
               </th>
-              <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: "600", color: "#475569", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <th style={{ textAlign: "left", fontWeight: "600", color: "#475569", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Description
               </th>
             </tr>
@@ -165,7 +185,7 @@ export const BuilderRegistry = () => {
                   onClick={() => window.open(b.url, "_blank")}
                   style={{ cursor: "pointer", background: isConf ? "rgba(34,197,94,0.06)" : (i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)") }}
                 >
-                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
                       <img
                         src={"https://www.google.com/s2/favicons?domain=" + domain + "&sz=64"}
@@ -176,12 +196,12 @@ export const BuilderRegistry = () => {
                       <span style={{ color: "#cbd5e1", fontSize: "11px" }}>{"↗"}</span>
                     </div>
                   </td>
-                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: "20px", fontSize: "10px", fontWeight: "700", letterSpacing: "0.03em", textTransform: "uppercase", color: "#fff", background: isConf ? "#22c55e" : "#3b82f6" }}>
                       {b.conformance}
                     </span>
                   </td>
-                  <td style={{ padding: "10px 16px", borderBottom: "1px solid #f1f5f9", color: "#64748b", fontSize: "12px", lineHeight: "1.5" }}>
+                  <td style={{ borderBottom: "1px solid #f1f5f9", color: "#64748b", fontSize: "12px", lineHeight: "1.5" }}>
                     {b.desc}
                   </td>
                 </tr>
