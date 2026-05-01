@@ -89,7 +89,7 @@ export const BuilderRegistry = () => {
   const confN = BUILDERS.filter((b) => b.conformance === "Conformant").length;
   const alignN = BUILDERS.length - confN;
   return (
-    <div className="not-prose" style={{ marginTop: "16px" }}>
+    <div className="not-prose" style={{ marginTop: "16px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
       <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "4px 12px", fontSize: "13px" }}>
           <strong style={{ color: "#16a34a" }}>{confN}</strong>{" "}
@@ -129,7 +129,7 @@ export const BuilderRegistry = () => {
           </button>
         ) : null}
       </div>
-      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", width: "100%", boxSizing: "border-box" }}>
         <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px" }}>
           <colgroup>
             <col style={{ width: "240px" }} />
