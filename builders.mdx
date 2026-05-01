@@ -130,7 +130,7 @@ const arrow = (field) => sortField === field ? (sortDir === "asc" ? " â–²" : " â
         ) : null}
       </div>
       <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px", tableLayout: "auto" }}>
           <thead>
             <tr style={{ background: "rgba(0,0,0,0.02)" }}>
               <th onClick={() => doSort("name")} style={{ padding: "10px 14px 10px 20px", textAlign: "left", fontWeight: "600", color: "#475569", cursor: "pointer", userSelect: "none", borderBottom: "2px solid #e2e8f0", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
