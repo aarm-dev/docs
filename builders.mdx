@@ -60,6 +60,7 @@ export const BUILDERS = [
   { name: "Kontext", desc: "Runtime authorization for AI agents with least-privilege tool calls, scoped credentials, audit trails, and instant revocation.", conformance: "Aligned", url: "https://kontext.security" },
 ];
 
+
 export const BuilderRegistry = () => {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState("conformance");
@@ -93,13 +94,19 @@ export const BuilderRegistry = () => {
   return (
     <div className="not-prose" style={{ marginTop: "16px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
       <style>{`
+        .builders-table {
+          width: 100% !important;
+          table-layout: fixed !important;
+          border-collapse: collapse !important;
+        }
         .builders-table th,
         .builders-table td {
           padding: 12px 16px !important;
+          margin: 0 !important;
         }
         .builders-table thead th {
-          padding-top: 14px !important;
-          padding-bottom: 14px !important;
+          padding-top: 12px !important;
+          padding-bottom: 12px !important;
         }
         .builders-table th:first-child,
         .builders-table td:first-child {
@@ -110,6 +117,13 @@ export const BuilderRegistry = () => {
         .builders-table td:last-child {
           padding-left: 16px !important;
           padding-right: 20px !important;
+        }
+        .builders-table-wrapper {
+          overflow: hidden;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          width: 100%;
+          box-sizing: border-box;
         }
       `}</style>
       <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap", alignItems: "center" }}>
@@ -151,8 +165,8 @@ export const BuilderRegistry = () => {
           </button>
         ) : null}
       </div>
-      <div style={{ overflowX: "auto", borderRadius: "10px", border: "1px solid #e2e8f0", width: "100%", boxSizing: "border-box" }}>
-        <table className="builders-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "13px" }}>
+      <div className="builders-table-wrapper">
+        <table className="builders-table" style={{ fontSize: "13px" }}>
           <colgroup>
             <col style={{ width: "30%" }} />
             <col style={{ width: "15%" }} />
