@@ -74,7 +74,7 @@ description: "Runtime application protection for AI agents, MCP, and agentic wor
 
 ### Description
 
-Operant AI provides runtime protection for AI agents, MCP servers, and agentic applications. The product family centers on two enforcement components: the Operant MCP Gateway, which intercepts MCP tool calls before execution and applies policy inline, and Agent Protector, which extends real-time enforcement across the broader agentic toolchain including LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK.
+Operant AI provides runtime protection for AI agents, MCP servers, and agentic applications. The product family centers on two enforcement components: the Operant Endpoint Protector, which intercepts MCP tool calls, prompts, and shell executions before execution and applies policy inline, and Agent Protector, which extends real-time enforcement across the broader agentic toolchain including LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK.
 
 For MCP and agent workloads, the gateway sits between the agent and downstream tools, parsing each call, classifying parameters, evaluating policies against accumulated session context, and emitting a signed action receipt regardless of decision outcome. The same enforcement path covers all five AARM authorization decisions, with redaction applied inline before downstream delivery and human approval routed through bounded step-up flows.
 
@@ -169,7 +169,7 @@ Identity is enforced as a precondition, not an afterthought. The gateway will no
 
 Operant AI builds runtime protection for AI agents, MCP, and agentic applications. The thesis is that perimeter-first security breaks down once autonomous agents can traverse apps, APIs, and data stores without a human in the loop, and that the enforcement point that matters most is the one closest to the action, intercepting tool calls before they execute rather than reacting after.
 
-The product family unifies the MCP Gateway and Agent Protector under one policy engine and one audit surface, so the same controls apply whether traffic originates from a developer's IDE-based agent, a production agentic application, or an MCP server connected to a downstream business system. The platform spans rogue agent intent detection, inline privilege escalation blocking, agent supply chain risk analysis, shadow agent discovery, and zero-trust enforcement across the agent toolchain.
+The product family unifies the Endpoint Protector, MCP Gateway, and Agent Protector under one policy engine and one audit surface, so the same controls apply whether traffic originates from a developer's IDE-based agent, a production agentic application, or an MCP server connected to a downstream business system. The platform spans rogue agent intent detection, inline privilege escalation blocking, agent supply chain risk analysis, shadow agent discovery, and zero-trust enforcement across the agent toolchain.
 
 Operant AI is a contributing member of CNCF, the OWASP Foundation, and the Coalition for Secure AI. The platform holds an active SOC 2 Type II attestation issued by Advantage Partners covering the Operant Runtime Application Protection Platform.
 
@@ -179,7 +179,7 @@ Operant AI is a contributing member of CNCF, the OWASP Foundation, and the Coali
 |---|---|
 | Headquarters | San Francisco, USA |
 | Customers | Chargebee and additional commercial customers |
-| Leadership | Vrajesh Bhavsar (Co-founder), Priyanka Tembey (Co-founder) |
+| Leadership | Vrajesh Bhavsar (Co-founder), Priyanka Tembey (Co-founder), Ashley Roof (Co-founder) |
 | Compliance | SOC 2 Type II (Advantage Partners) |
 | Memberships | CNCF, OWASP Foundation, Coalition for Secure AI |
 
