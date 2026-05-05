@@ -1,0 +1,200 @@
+---
+title: "Operant AI"
+description: "Runtime application protection for AI agents, MCP, and agentic workloads"
+---
+
+<div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+  <img
+    src="/images/operantai_logo.jpeg"
+    alt="Operant AI"
+    style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', border: '1px solid var(--colors-border)' }}
+  />
+  <span style={{
+    background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
+    color: '#2E7D32',
+    fontSize: '11px',
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: '20px',
+    letterSpacing: '0.05em',
+    border: '1px solid rgba(46, 125, 50, 0.15)',
+    boxShadow: '0 1px 3px rgba(46, 125, 50, 0.08)'
+  }}>
+    ✓ AARM CONFORMANT — EXTENDED
+  </span>
+  <span style={{ color: 'var(--colors-content-secondary)', fontSize: '14px' }}>
+    Runtime protection for AI agents and MCP · <a href="https://operant.ai" target="_blank">operant.ai ↗</a>
+  </span>
+</div>
+
+<Tabs>
+  <Tab title="Overview">
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '2rem' }}>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Status</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4CAF50', display: 'inline-block', boxShadow: '0 0 6px rgba(76, 175, 80, 0.4)' }}></span>
+      <span style={{ fontSize: '15px', fontWeight: 600 }}>Conformant</span>
+    </div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Tier</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>Extended (R1–R9)</div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Verified</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>May 2026</div>
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid var(--colors-border)',
+    background: 'var(--colors-background-secondary)',
+  }}>
+    <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--colors-content-secondary)', marginBottom: '6px' }}>Builder Member</div>
+    <div style={{ fontSize: '15px', fontWeight: 600 }}>Yes</div>
+  </div>
+</div>
+
+### Description
+
+Operant AI provides runtime protection for AI agents, MCP servers, and agentic applications. The product family centers on two enforcement components: the Operant MCP Gateway, which intercepts MCP tool calls before execution and applies policy inline, and Agent Protector, which extends real-time enforcement across the broader agentic toolchain including LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK.
+
+For MCP and agent workloads, the gateway sits between the agent and downstream tools, parsing each call, classifying parameters, evaluating policies against accumulated session context, and emitting a signed action receipt regardless of decision outcome. The same enforcement path covers all five AARM authorization decisions, with redaction applied inline before downstream delivery and human approval routed through bounded step-up flows.
+
+Operant AI's relevance to AARM is direct: the gateway operates at the pre-execution chokepoint where agents call tools, with native MCP protocol awareness, full session context accumulation, and tamper-evident signed receipts emitted for every decision class.
+
+### Platform capabilities
+
+<CardGroup cols={2}>
+  <Card title="Pre-execution MCP gateway" icon="shield-halved">
+    Intercepts MCP tool calls inline before execution and enforces named-policy decisions per call. Native protocol awareness across MCP, with full action parameters and tool identity captured at every API hook point.
+  </Card>
+  <Card title="Five AARM authorization decisions" icon="filter">
+    Allow, Deny, Modify, Step-up, and Defer — all five demonstrated against live MCP tools with traceable AARM receipts and execution halted without side effects on Step-up and Defer.
+  </Card>
+  <Card title="Identity binding via Okta and Google" icon="fingerprint">
+    Deny-on-missing-identity enforced at gateway startup. Human, agent, service, session, role, scope, and delegation chain bound to every receipt, validated against trusted IdPs supporting token freshness and revocation.
+  </Card>
+  <Card title="Signed Ed25519 receipts" icon="signature">
+    Every decision produces a versioned AARM receipt covering action, requester context, policy decision, execution outcome, and an Ed25519 signature with key identifier. Hash-chained context fields support tamper detection across prior actions.
+  </Card>
+  <Card title="Inline PII detection and redaction" icon="eye-slash">
+    Sensitive entity scanners detect emails, SSNs, and other classes inline. Detection can drive Deny, Modify (parameter rewrite before execution), or session-level quarantine carried across subsequent calls in the same session.
+  </Card>
+  <Card title="AI Agent Scope Guard" icon="compass">
+    Per-agent natural-language scope definitions with block-mode enforcement. Cumulative session context blocks scope-deviating actions, including agent fallbacks to shell commands when MCP tools are unavailable.
+  </Card>
+</CardGroup>
+
+### Integration coverage
+
+Operant AI runs the same enforcement and audit surface across MCP gateway traffic and broader agentic application protection, so customers get one policy and one audit trail across the agent toolchain.
+
+<AccordionGroup>
+  <Accordion title="MCP servers and tools">
+    Native MCP protocol parsing across common servers including GitHub, Atlassian, Slack, and Fetch. Per-team allowlists, per-tool credential scoping, and parameter-level content validation evaluated on every call.
+  </Accordion>
+  <Accordion title="AI clients and agents">
+    Tested with Cursor and Claude-class clients. Cursor session traces capture the original prompt at `cursor/beforeSubmitPrompt` through the final response at `cursor/afterAgentResponse`, including tool calls and shell-execution attempts.
+  </Accordion>
+  <Accordion title="Agentic frameworks">
+    Agent Protector extends runtime protection across LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK, applying the same policy surface used at the MCP layer.
+  </Accordion>
+  <Accordion title="Identity, SIEM, and secrets">
+    Native sign-in via Google OAuth and Okta SSO. Telemetry exports to Splunk Cloud with a documented JSON schema (confidence_score, detection_timestamp, entity_type, gatekeeper_name, risk_id, sdk_action, source_service, target_service). JIT credential issuance integrates with customer-side providers including HashiCorp Vault, CyberArk, and AWS IAM.
+  </Accordion>
+</AccordionGroup>
+
+  </Tab>
+
+  <Tab title="Conformance">
+
+### Conformance record
+
+| | |
+|---|---|
+| Specification version | AARM v1.0 |
+| Conformance tier | Extended (R1–R9) |
+| Verified by | Herman Errico, AARM author |
+| Date | May 2026 |
+
+### Architecture
+
+Operant enforces AARM requirements at the MCP Gateway, a pre-execution interception point between the agent client and downstream MCP servers. Every tool call routes through the gateway, where the request is parsed at the protocol level, parameters are classified by sensitive-entity scanners, accumulated session context is loaded, the applicable policy is evaluated, and a decision is returned inline before the tool executes. Allow paths forward the call to the downstream server. Deny paths terminate the call and return the policy reason to the agent. Modify paths rewrite parameters, such as redacting PII, prior to forwarding. Step-up paths suspend execution pending human approval with a bounded timeout. Defer paths suspend execution pending validation, with no downstream side effects in either suspension class.
+
+Session context is captured and chained across the full agent loop. A single request ID links the original user prompt, every subsequent tool call, every detection event, and the final agent response. Policies are evaluated against this accumulated context rather than against isolated calls, which enables session-level quarantine: once a session triggers a sensitive-data event, subsequent calls to the same target are denied even if their individual parameters are clean.
+
+Every decision, regardless of outcome, produces an AARM receipt containing action descriptors, requester context (human, agent, service, session, role, scope, delegation chain), policy decision (result, reason, policy ID, version, hash), execution outcome where applicable, and an Ed25519 signature with key identifier. Receipts include hash-chained context fields for tamper detection across prior actions in the session.
+
+Identity is enforced as a precondition, not an afterthought. The gateway will not accept tool calls until the operator authenticates against a trusted identity provider (Google OAuth or Okta SSO). The authenticated principal is bound to every receipt issued during the session.
+
+### AARM requirement coverage
+
+#### Core requirements (R1–R6 MUST) and Extended requirements (R7–R9 SHOULD)
+
+| Requirement | Description | Status |
+|---|---|---|
+| R1 | Pre-Execution Interception | ✅ Met |
+| R2 | Context Accumulation | ✅ Met |
+| R3 | Policy Evaluation with Intent Alignment | ✅ Met |
+| R4 | Five authorization decisions (ALLOW / DENY / MODIFY / STEP_UP / DEFER) | ✅ Met |
+| R5 | Immutable audit log | ✅ Met |
+| R6 | Identity Binding | ✅ Met |
+| R7 | Semantic distance tracking | ✅ Met |
+| R8 | Telemetry Export | ✅ Met |
+| R9 | Least Privilege Enforcement | ✅ Met |
+
+  </Tab>
+
+  <Tab title="About">
+
+### Company
+
+Operant AI builds runtime protection for AI agents, MCP, and agentic applications. The thesis is that perimeter-first security breaks down once autonomous agents can traverse apps, APIs, and data stores without a human in the loop, and that the enforcement point that matters most is the one closest to the action, intercepting tool calls before they execute rather than reacting after.
+
+The product family unifies the MCP Gateway and Agent Protector under one policy engine and one audit surface, so the same controls apply whether traffic originates from a developer's IDE-based agent, a production agentic application, or an MCP server connected to a downstream business system. The platform spans rogue agent intent detection, inline privilege escalation blocking, agent supply chain risk analysis, shadow agent discovery, and zero-trust enforcement across the agent toolchain.
+
+Operant AI is a contributing member of CNCF, the OWASP Foundation, and the Coalition for Secure AI. The platform holds an active SOC 2 Type II attestation issued by Advantage Partners covering the Operant Runtime Application Protection Platform.
+
+### Key facts
+
+| | |
+|---|---|
+| Headquarters | San Francisco, USA |
+| Customers | Chargebee and additional commercial customers |
+| Leadership | Vrajesh Bhavsar (Co-founder), Priyanka Tembey (Co-founder) |
+| Compliance | SOC 2 Type II (Advantage Partners) |
+| Memberships | CNCF, OWASP Foundation, Coalition for Secure AI |
+
+### Contact
+
+| | |
+|---|---|
+| Website | [operant.ai ↗](https://operant.ai) |
+
+  </Tab>
+
+</Tabs>
+
+---
+
+<Info>
+  This page is maintained by the AARM Technical Working Group. To report an inaccuracy or request an update, [open a GitHub issue](https://github.com/aarm-dev/docs/issues).
+</Info>
