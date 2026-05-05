@@ -74,7 +74,7 @@ description: "Runtime application protection for AI agents, MCP, and agentic wor
 
 ### Description
 
-Operant AI provides runtime protection for AI agents, MCP servers, and agentic applications. The product family centers on two enforcement components: the Operant Endpoint Protector, which intercepts MCP tool calls, prompts, and shell executions before execution and applies policy inline, and Agent Protector, which extends real-time enforcement across the broader agentic toolchain including LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK.
+Operant AI provides runtime protection for AI agents, MCP servers, and agentic applications. The product family centers on two enforcement components: the [Operant Endpoint Protector](https://www.operant.ai/platform/endpoint-protector), which intercepts MCP tool calls, prompts, and shell executions before execution and applies policy inline across endpoints, and [Operant Agent Protector](https://www.operant.ai/platform/agent-protector), which extends real-time enforcement across the broader agentic toolchain including LangGraph, CrewAI, n8n, and the ChatGPT Agents SDK.
 
 For MCP and agent workloads, the gateway sits between the agent and downstream tools, parsing each call, classifying parameters, evaluating policies against accumulated session context, and emitting a signed action receipt regardless of decision outcome. The same enforcement path covers all five AARM authorization decisions, with redaction applied inline before downstream delivery and human approval routed through bounded step-up flows.
 
