@@ -80,6 +80,12 @@
               "research/aligned",
               "research/open-challenges"
             ]
+          },
+          {
+            "group": "Appendix",
+            "pages": [
+              "appendix/reference-rule-libraries"
+            ]
           }
         ]
       },

@@ -1,0 +1,128 @@
+---
+title: "Reference Rule Libraries"
+description: "How a concrete rule pack instantiates each AARM component, with an open detection standard as a worked example."
+---
+
+## Purpose
+
+AARM defines the runtime control surface — the components, the action schema, the conformance requirements — but the specification is intentionally rule-agnostic. A conformant implementation still needs a concrete body of rules: pattern detections that an Action Mediation Layer can recognize, classification signals that a Policy Engine can evaluate, response actions a Policy Enforcement Point can apply, and audit fields a Receipt Generator can sign.
+
+A **reference rule library** is an external, openly maintained rule pack that names, structures, and tests these inputs so that integrators do not have to re-derive them. The relationship is the same as between an access-control specification and a rule format that targets it: the specification is normative, the library is one concrete instantiation.
+
+This appendix describes what an AARM reference rule library should expose, maps each component to the rule fields that drive it, and uses one such library — the open MIT-licensed [Agent Threat Rules](https://github.com/Agent-Threat-Rule/agent-threat-rules) (ATR) standard — as a worked example. Other libraries can implement the same mapping; nothing in this appendix is exclusive to ATR.
+
+---
+
+## What a Reference Rule Library Provides
+
+A reference rule library, to be useful to an AARM implementation, should provide:
+
+| Provided | Consumed by AARM component |
+|----------|-----------------------------|
+| Detection patterns over action fields and parameters | Action Mediation Layer / Policy Decision Point |
+| Category and subcategory taxonomy | Action Classification |
+| Confidence scores, severity, false-positive rate | Policy Decision Point (thresholds, uncertainty handling) |
+| Response actions (block, alert, escalate, defer) | Policy Enforcement Point |
+| Test vectors (true positives, true negatives, evasion cases) | Conformance testing |
+| Compliance and threat-model references | Receipt Generator, Telemetry Exporter |
+
+A library that exposes only patterns without test vectors, or only categories without response actions, is incomplete with respect to AARM and should be combined with other sources.
+
+---
+
+## Component Mapping
+
+The table below maps each AARM component to the rule fields that populate it. Field names use the ATR schema as a worked example; equivalent fields in other libraries can be substituted.
+
+| AARM component | Rule fields that populate it (ATR example) |
+|-----------------|-------------------------------------------|
+| Action Mediation Layer | `agent_source.type`, `agent_source.framework`, `detection.conditions[].field`, `tags.scan_target` |
+| Context Accumulator | `tags.category`, `tags.subcategory`, prior-action signals referenced by `detection.conditions` |
+| Policy Engine (PDP) | `detection.conditions`, `detection.condition`, `confidence`, `severity`, `wild_fp_rate`, `maturity` |
+| Action Classification | `tags.category`, `tags.subcategory`, `severity`, `detection_tier` |
+| Policy Engine (PEP) / Approval / Deferral Service | `response.actions`, `response.auto_response_threshold`, `response.message_template` |
+| Receipt Generator | rule `id`, `rule_version`, `references` (CVE, OWASP, MITRE ATLAS), `compliance` blocks |
+| Telemetry Exporter | `id`, `tags`, `severity`, `references.owasp_llm`, `references.owasp_agentic`, `references.mitre_atlas`, `compliance` |
+
+The mapping is not one-to-one — `tags.category` informs both the Context Accumulator (what kind of activity is happening) and Action Classification (forbidden vs context-dependent). This is expected; the rule library is a single artifact consumed by several components.
+
+---
+
+## Worked Example
+
+The rule below is `ATR-2026-00001` from the Agent Threat Rules standard. The annotations on the right show which AARM components each field activates.
+
+```yaml
+title: "Direct Prompt Injection via User Input"
+id: ATR-2026-00001                       # → Receipt Generator: rule id binding
+rule_version: 1                          # → Receipt Generator: policy version
+status: "stable"
+severity: high                           # → Policy Engine: risk_level
+maturity: "stable"                       # → Policy Engine: gate by maturity filter
+detection_tier: pattern                  # → Action Classification: tier signal
+
+references:                              # → Telemetry / Receipt: external mapping
+  owasp_llm: ["LLM01:2025 - Prompt Injection"]
+  owasp_agentic: ["ASI01:2026 - Agent Goal Hijack"]
+  mitre_atlas: ["AML.T0051 - LLM Prompt Injection"]
+
+tags:
+  category: prompt-injection             # → Context Accumulator + Action Classification
+  subcategory: direct
+  scan_target: mcp                       # → Action Mediation Layer: protocol scope
+  confidence: high
+
+agent_source:                            # → Action Mediation Layer: adapter scope
+  type: llm_io
+  framework: [openai, anthropic, langchain, llamaindex, autogen, crewai]
+
+detection:                               # → Policy Decision Point: match predicate
+  conditions:
+    - field: user_input
+      operator: regex
+      value: "(?i)\\b(ignore|disregard|forget|override|bypass)\\s+..."
+  condition: any
+
+response:                                # → Policy Enforcement Point + Approval Service
+  actions: [block_input, alert, snapshot, escalate]
+  auto_response_threshold: high
+
+confidence: 91                           # → PDP threshold τ comparison
+wild_fp_rate: 0                          # → PDP uncertainty handling
+test_cases:                              # → Conformance testing (R3, R10)
+  true_positives:  [...]
+  true_negatives:  [...]
+evasion_tests:   [...]
+```
+
+When this rule is loaded into an AARM-conformant system, the lifecycle is:
+
+1. The Action Mediation Layer recognizes the action as `agent_source.type=llm_io` against an MCP target and forwards the action to the PDP.
+2. The Context Accumulator tags the action with `category: prompt-injection` and updates the session's risk signals.
+3. The PDP evaluates the action against `detection.conditions` and produces a decision; `severity: high` and `confidence: 91` feed its threshold logic and uncertainty handling.
+4. The PEP executes `response.actions` — `block_input` corresponds to a `DENY` decision in AARM's vocabulary; `escalate` maps to `STEP_UP` and routes to the Approval Service.
+5. The Receipt Generator binds the matched rule `id` and `rule_version` to the signed receipt.
+6. The Telemetry Exporter emits the event with `references` and `compliance` fields attached, enabling SIEM correlation against OWASP, MITRE ATLAS, EU AI Act, and NIST AI RMF mappings.
+
+A different rule pack with different field names can be mapped to AARM components through the same exercise; the field names matter only inside the library.
+
+---
+
+## Other Reference Libraries
+
+ATR is one example. Any open or proprietary rule pack that exposes the categories in the mapping table above can serve as a reference library for an AARM implementation. The specification does not endorse a single library, and a conformant deployment may combine multiple libraries — for instance, a domain-specific pack for financial-services policies alongside a general detection pack.
+
+Libraries that may be added to this section in the future include rule packs maintained by detection-engineering communities, vendor-published policy packs released under open licenses, and academic releases that accompany published research.
+
+---
+
+## Submitting an Entry
+
+If your library satisfies the criteria in [What a Reference Rule Library Provides](#what-a-reference-rule-library-provides) and is openly licensed, open a PR adding a short entry under "Other Reference Libraries" with:
+
+- library name and license
+- repository URL
+- coverage summary (categories, rule count, validated false-positive rate)
+- field-mapping notes if field names differ from the table above
+
+The mapping itself is normative; the choice of library is not.
